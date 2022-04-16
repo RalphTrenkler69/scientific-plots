@@ -1,0 +1,89 @@
+.TH SURFPLT 1 "March 2022"
+.SH NAME
+surfplt \- 3D surface plot with OpenGL of a matrix with real elements
+.SY surfplt
+.OP \-a alpha
+.OP \-c height
+.OP \-h
+.OP \-m "angle sleep"
+.OP \-w
+.RI [ file ]
+.YS
+.SH DESCRIPTION
+The
+.I surfplt(1)
+program draws a three dimensional surface from the given matrix data
+using OpenGL with a wireframe or a rendered solid surface.
+The input data is read from standard input or from the specified file
+in ASCII format.
+The input file structure is quite simple.
+.SH OPTIONS
+The following options can be given.
+.TP
+.BI \-a " alpha"
+Enable alpha blending.
+That means that the surface is translucent with an alpha value between 0.0
+and 1.0.
+.TP
+.BI \-c " height"
+Set the vertical camera position.
+The default value is 0.7.
+.TP
+.BI \-h
+Print help text and exit.
+.TP
+.BI \-m " angle sleep"
+Rotate the cube in steps of
+.I angle
+in degrees with sleep time
+.I sleep
+in milliseconds.
+.TP
+.B \-w
+Draw surface with a wireframe and do not render.
+.SH INPUT FILE FORMAT
+The input file is read from standard input or from the specified file.
+First, you can include the axes labels.
+
+.RS
+.RI xlabel " ""label"""
+.RE
+
+.RS
+.RI ylabel " ""label"""
+.RE
+
+.RS
+.RI zlabel " ""label"""
+.RE
+
+.RS
+.RI box " x y z"
+.RE
+
+This decribes the length of the sides of the three dimensional box in
+which the plotting is done.
+The default values are 1.0 1.0 1.0.
+The next expression is:
+
+.RS
+.RI data " nx ny"
+.I "z-value ..."
+.RE
+
+This is the matrix with z-values.
+There have to be
+.I nx
+*
+.I ny
+z-values following the data statement.
+.I nx
+is the number of indices in x-direction and
+.I ny
+the number of indices in y-direction.
+The x-index varies faster than the y-index in this sequence of z-values.
+.SH AUTHOR
+This program was written by Ralph Trenkler
+.MT
+<ralph-trenkler@t-online.de>.
+.ME

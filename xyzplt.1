@@ -1,0 +1,99 @@
+.TH XYZPLT 1 "March 2022"
+.SH NAME
+xyzplt \- 3D lines and points plot with OpenGL
+.SY xyzplt
+.OP \-c height
+.OP \-h
+.OP \-m "angle sleep"
+.RI [ file ]
+.YS
+.SH DESCRIPTION
+The
+.I xyzplt(1)
+program plots lines and points with different colors in 3D using OpenGL.
+The input file structure is quite simple.
+.SH OPTIONS
+The following options can be given.
+.TP
+.BI \-c " height"
+Set the vertical camera position.
+The default value is 0.7.
+.TP
+.BI \-h
+Print help text and exit.
+.TP
+.BI \-m " angle sleep"
+Rotate the cube in steps of
+.I angle
+in degrees with sleep time
+.I sleep
+in milliseconds.
+.SH INPUT FILE FORMAT
+The input data is read from standard input or the given file.
+First, you can include the axes labels.
+The labels are optional and the default is "x", "y" and "z".
+
+.RS
+.RI xlabel " ""label"""
+.RE
+
+.RS
+.RI ylabel " ""label"""
+.RE
+
+.RS
+.RI zlabel " ""label"""
+.RE
+
+.RS
+.RI box " x y z"
+.RE
+
+This decribes the length of the sides of the three dimensional box in
+which the plotting is done.
+The default values are 1.0 1.0 1.0.
+The next expression is:
+
+.RS
+.RI scale " xmin xmax ymin ymax zmin zmax"
+.RE
+
+This are the coordinate ranges for the cube in which the lines and points
+are drawn.
+The default is 0.0 1.0 0.0 1.0 0.0 1.0.
+
+.RS
+.RI data " n"
+.RE
+
+This directive gives the number of
+.B line
+and
+.B points
+statements.
+
+.RS
+.RI line " red green blue n"
+.I vertex-x vertex-y vertex-z "..."
+.RE
+
+This statement plots a line in the RGB colors
+.I red green blue
+with
+.I n
+vertices.
+
+.RS
+.RI points " red green blue n"
+.I vertex-x vertex-y vertex-z "..."
+.RE
+
+This statement plots
+.I n
+points in the RGB colors
+.I red green blue.
+.SH AUTHOR
+This program was written by Ralph Trenkler
+.MT
+<ralph-trenkler@t-online.de>.
+.ME
