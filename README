@@ -1,0 +1,16 @@
+This is the readme file for the scientific plot programs from Ralph Trenkler.
+You can make and install these programs with the instructions in the
+"INSTALL" file.
+After installation you can call these programs with the commands
+
+surfplt surftst5.dat
+xyzplt xyztst4.dat
+xyplt xytst1.dat
+
+The documentation for these programs is available with the commands
+
+man surfplt
+man xyzplt
+man xyplt
+
+Have fun with these programs!

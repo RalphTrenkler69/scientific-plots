@@ -1,0 +1,15 @@
+This are the make and install instructions for the scientific plot
+programs from Ralph Trenkler.
+The following libraries must be installed with development files before the
+make process:
+
+opengl >= 2.1
+glu
+glut
+freetype
+ftgl
+
+Then the programs can be compiled and installed with the commands:
+
+make
+sudo make install
