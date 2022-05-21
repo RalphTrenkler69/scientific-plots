@@ -12,7 +12,7 @@
 #define FALSE 0
 #define ROTMIN 20
 #define ROTFACTOR 0.4
-#define NLINES 256 
+#define NLINES 262144 
 #define MAXSTRLEN 512
 
 
@@ -258,6 +258,10 @@ void readinput(FILE *file)
 	    if (1!=fscanf(file,"%d",&nlines)) {
 	      fprintf(stderr,"error: arg for data missing.\n");
 	      exit(1);
+	    }
+            if (nlines > NLINES) {
+	      fprintf(stderr,"error: max number of lines is %d.\n",NLINES);
+	      exit(2);
 	    }
 	    for (iline = 0; (EOF!=fscanf(file,"%s",token)) && (iline<nlines);
 		 iline++) {
