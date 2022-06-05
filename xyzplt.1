@@ -1,16 +1,18 @@
-.TH XYZPLT 1 "March 2022"
+.TH XYZPLT 1 "May 2022"
 .SH NAME
 xyzplt \- 3D lines and points plot with OpenGL
 .SY xyzplt
 .OP \-c height
 .OP \-h
 .OP \-m "angle sleep"
+.OP \-s sleep
 .RI [ file ]
 .YS
 .SH DESCRIPTION
 The
 .I xyzplt(1)
 program plots lines and points with different colors in 3D using OpenGL.
+The plots can be animated.
 The input file structure is quite simple.
 .SH OPTIONS
 The following options can be given.
@@ -28,8 +30,15 @@ Rotate the cube in steps of
 in degrees with sleep time
 .I sleep
 in milliseconds.
+.TP
+.BI \-s " sleep"
+Set time steps for animation to
+.I sleep.
 .SH INPUT FILE FORMAT
 The input data is read from standard input or the given file.
+The head of the file can contain comment lines, which start with
+an '#' character.
+
 First, you can include the axes labels.
 The labels are optional and the default is "x", "y" and "z".
 
@@ -61,6 +70,18 @@ The next expression is:
 This are the coordinate ranges for the cube in which the lines and points
 are drawn.
 The default is 0.0 1.0 0.0 1.0 0.0 1.0.
+
+.RS
+.RI animate " nt"
+.RE
+
+This optional statement tells
+.I xyzplt(1)
+to read in
+.I nt
+.B data
+blocks, one for each time step.
+If this statement is not given, no animation is done.
 
 .RS
 .RI data " n"

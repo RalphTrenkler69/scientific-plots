@@ -1,4 +1,4 @@
-.TH SURFPLT 1 "March 2022"
+.TH SURFPLT 1 "May 2022"
 .SH NAME
 surfplt \- 3D surface plot with OpenGL of a matrix with real elements
 .SY surfplt
@@ -7,6 +7,7 @@ surfplt \- 3D surface plot with OpenGL of a matrix with real elements
 .OP \-h
 .OP \-m "angle sleep"
 .OP \-w
+.OP \-s " sleep"
 .RI [ file ]
 .YS
 .SH DESCRIPTION
@@ -14,6 +15,7 @@ The
 .I surfplt(1)
 program draws a three dimensional surface from the given matrix data
 using OpenGL with a wireframe or a rendered solid surface.
+The surface can be animated.
 The input data is read from standard input or from the specified file
 in ASCII format.
 The input file structure is quite simple.
@@ -41,8 +43,16 @@ in milliseconds.
 .TP
 .B \-w
 Draw surface with a wireframe and do not render.
+.TP
+.BI \-s " sleep"
+Set the time steps in the animation to
+.I sleep
+milliseconds.
 .SH INPUT FILE FORMAT
 The input file is read from standard input or from the specified file.
+The head of the file can contain comment lines, which start with
+an '#' character.
+
 First, you can include the axes labels.
 
 .RS
@@ -65,6 +75,18 @@ This decribes the length of the sides of the three dimensional box in
 which the plotting is done.
 The default values are 1.0 1.0 1.0.
 The next expression is:
+
+.RS
+.RI animate " nt"
+.RE
+
+This statement tells
+.I surfplt(1)
+to read in
+.I nt
+.B data
+blocks, one for each time step.
+If this statement is not given, no animation is done.
 
 .RS
 .RI data " nx ny"

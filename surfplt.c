@@ -19,18 +19,27 @@ extern void draw_axes(void), init_ftgl(void);
 
 #define AVG(f1,f3,dx) (((f3)-(f1))/(2*(dx)))
 
+struct plot {
+  int matx, maty;
+  float *matrix;
+  float (*vertices)[3], (*normals)[3];
+};
+
+struct animation {
+  int size;
+  int animate, motion, render, alpha_blending;
+  struct plot *plt;
+};
+
+struct animation anim = {1, FALSE, FALSE, TRUE, FALSE, (void *) NULL};
+
 float spinangle,thetaangle,camera,spinincr,sleeptime,box[3],scaling[3][2];
 int width,height,x_mouse,y_mouse;
 float alpha;
-GLuint dlist_base;
+int iplot = 0;
 
-int matx,maty;
-float *matrix;
-float (*vertices)[3],(*normals)[3];
 char xlabel[MAXSTRLEN], ylabel[MAXSTRLEN], zlabel[MAXSTRLEN];
-
-
-int render,motion,alpha_blending;
+char font_path[MAXSTRLEN] = "";
 
 void init(void) 
 {
@@ -42,7 +51,7 @@ void init(void)
    GLfloat white_light[] = {1.0,1.0,1.0,1.0};
    GLfloat lmodel_ambient[] = {0.9,0.0,0.0,1.0};
    glClearColor (0.0, 0.0, 0.0, 0.0);
-   if (! render) {
+   if (! anim.render) {
      glShadeModel (GL_FLAT);
    } else {
      glShadeModel(GL_SMOOTH);
@@ -86,40 +95,48 @@ void displayBox(void)
    glEnd();
  }
 
-void displayWireframe(void)
+void displayWireframe(struct plot *plt)
   {
     int ix,iy;
     glBegin(GL_LINES);
-    for (ix=0; ix<matx; ix++)
-      for (iy=0; iy<maty-1; iy++) {
-	glVertex3f(-box[0]+ix*2*box[0]/((float) (matx-1)),
-	   -box[2]+2*box[2]*(matrix[iy*matx+ix]-scaling[2][0])/(scaling[2][1]-scaling[2][0]),
-           -box[1]+iy*2*box[1]/((float) (maty-1)));
-	glVertex3f(-box[0]+ix*2*box[0]/((float) (matx-1)),
-	   -box[2]+2*box[2]*(matrix[(iy+1)*matx+ix]-scaling[2][0])/(scaling[2][1]-scaling[2][0]),
-           -box[1]+(iy+1)*2*box[1]/((float) (maty-1)));
+    for (ix=0; ix<plt->matx; ix++)
+      for (iy=0; iy<plt->maty-1; iy++) {
+	glVertex3f(-box[0]+ix*2*box[0]/((float) (plt->matx-1)),
+	   -box[2]+2*box[2]*(plt->matrix[iy*plt->matx+ix]-scaling[2][0])/
+		   (scaling[2][1]-scaling[2][0]),
+           -box[1]+iy*2*box[1]/((float) (plt->maty-1)));
+	glVertex3f(-box[0]+ix*2*box[0]/((float) (plt->matx-1)),
+	   -box[2]+2*box[2]*(plt->matrix[(iy+1)*plt->matx+ix]-scaling[2][0])/
+		   (scaling[2][1]-scaling[2][0]),
+           -box[1]+(iy+1)*2*box[1]/((float) (plt->maty-1)));
       }
-    for (iy=0; iy<maty; iy++)
-      for (ix=0; ix<matx-1; ix++) {
-	glVertex3f(-box[0]+ix*2*box[0]/((float) (matx-1)),
-	   -box[2]+2*box[2]*(matrix[iy*matx+ix]-scaling[2][0])/(scaling[2][1]-scaling[2][0]),
-           -box[1]+iy*2*box[1]/((float) (maty-1)));
-	glVertex3f(-box[0]+(ix+1)*2*box[0]/((float) (matx-1)),
-	   -box[2]+2*box[2]*(matrix[iy*matx+ix+1]-scaling[2][0])/(scaling[2][1]-scaling[2][0]),
-           -box[1]+iy*2*box[1]/((float) (maty-1)));
+    for (iy=0; iy<plt->maty; iy++)
+      for (ix=0; ix<plt->matx-1; ix++) {
+	glVertex3f(-box[0]+ix*2*box[0]/((float) (plt->matx-1)),
+	   -box[2]+2*box[2]*(plt->matrix[iy*plt->matx+ix]-scaling[2][0])/
+		   (scaling[2][1]-scaling[2][0]),
+           -box[1]+iy*2*box[1]/((float) (plt->maty-1)));
+	glVertex3f(-box[0]+(ix+1)*2*box[0]/((float) (plt->matx-1)),
+	   -box[2]+2*box[2]*(plt->matrix[iy*plt->matx+ix+1]-scaling[2][0])/
+		   (scaling[2][1]-scaling[2][0]),
+           -box[1]+iy*2*box[1]/((float) (plt->maty-1)));
       }
     glEnd();
   }
 
-void computevertices(void)
+void computevertices(struct plot *plt)
   {
     int ix,iy;
-    vertices=(float (*)[3]) calloc((size_t) matx*maty,sizeof *vertices);
-    for (iy=0; iy<maty; iy++)
-      for (ix=0; ix<matx; ix++) {
-	vertices[iy*matx+ix][0]=-box[0]+ix*2*box[0]/((float) (matx-1));
-	vertices[iy*matx+ix][2]=-(-box[1]+iy*2*box[1]/((float) (maty-1)));
-	vertices[iy*matx+ix][1]=-box[2]+2*box[2]*(matrix[iy*matx+ix]-scaling[2][0])/
+    plt->vertices=(float (*)[3]) calloc((size_t) plt->matx*(plt->maty),
+				   sizeof *plt->vertices);
+    for (iy=0; iy<plt->maty; iy++)
+      for (ix=0; ix<plt->matx; ix++) {
+	plt->vertices[iy*(plt->matx)+ix][0]=-box[0]+ix*2*box[0]/
+	  ((float) (plt->matx-1));
+	plt->vertices[iy*(plt->matx)+ix][2]=-(-box[1]+iy*2*box[1]/
+					 ((float) (plt->maty-1)));
+	plt->vertices[iy*(plt->matx)+ix][1]=-box[2]+2*box[2]*
+	  (plt->matrix[iy*(plt->matx)+ix]-scaling[2][0])/
 	  (scaling[2][1]-scaling[2][0]);
       }
   }
@@ -151,7 +168,8 @@ void normalize(float a[], float n[])
     n[k] = a[k]/norm;
 }
 
-void normalavg4(float *a1,float *a2,float *a3,float *a4,float *b, float *n)
+void normalavg4(float *a1,float *a2,float *a3,float *a4,float *b, float *n,
+		int matx, int maty)
   {
     n[1] = 1.0;
     n[0] = -AVG(a4[1],a2[1],2*box[0]/(matx-1));
@@ -187,78 +205,78 @@ void normalavg2(float *a1,float *a2, float *b,float *n)
 
     
 
-void computenormals(void)
+void computenormals(struct plot *plt)
   {
     int ix,iy,i;
     float n[3];
-    normals=(float (*)[3]) calloc((size_t) matx*maty,sizeof *normals);
-    for (ix=1; ix<matx-1; ix++)
-      for (iy=1; iy<maty-1; iy++){
-	normalavg4(vertices[(iy-1)*matx+ix],
-		   vertices[iy*matx+ix+1],
-		   vertices[(iy+1)*matx+ix],
-		   vertices[iy*matx+ix-1],
-		   vertices[iy*matx+ix],
-		   n);
-	for (i=0; i<3; i++) normals[iy*matx+ix][i]=n[i];
+    plt->normals=(float (*)[3]) calloc((size_t) plt->matx*plt->maty,sizeof *plt->normals);
+    for (ix=1; ix<plt->matx-1; ix++)
+      for (iy=1; iy<plt->maty-1; iy++){
+	normalavg4(plt->vertices[(iy-1)*plt->matx+ix],
+		   plt->vertices[iy*plt->matx+ix+1],
+		   plt->vertices[(iy+1)*plt->matx+ix],
+		   plt->vertices[iy*plt->matx+ix-1],
+		   plt->vertices[iy*plt->matx+ix],
+		   n,plt->matx,plt->maty);
+	for (i=0; i<3; i++) plt->normals[iy*plt->matx+ix][i]=n[i];
       }
-    for (ix=1; ix<matx-1; ix++) {
-      normalavg3(vertices[ix+1],vertices[matx+ix],vertices[ix-1],
-		 vertices[ix],n);
-      for (i=0; i<3; i++) normals[ix][i]=n[i];
-      normalavg3(vertices[(maty-1)*matx+ix-1],
-		 vertices[(maty-2)*matx+ix],
-		 vertices[(maty-1)*matx+ix+1],
-		 vertices[(maty-1)*matx+ix],
+    for (ix=1; ix<plt->matx-1; ix++) {
+      normalavg3(plt->vertices[ix+1],plt->vertices[plt->matx+ix],plt->vertices[ix-1],
+		 plt->vertices[ix],n);
+      for (i=0; i<3; i++) plt->normals[ix][i]=n[i];
+      normalavg3(plt->vertices[(plt->maty-1)*plt->matx+ix-1],
+		 plt->vertices[(plt->maty-2)*plt->matx+ix],
+		 plt->vertices[(plt->maty-1)*plt->matx+ix+1],
+		 plt->vertices[(plt->maty-1)*plt->matx+ix],
 		 n);
-      for (i=0; i<3; i++) normals[(maty-1)*matx+ix][i]=n[i];
+      for (i=0; i<3; i++) plt->normals[(plt->maty-1)*plt->matx+ix][i]=n[i];
     }
-    for (iy=1; iy<maty-1; iy++) {
-      normalavg3(vertices[(iy-1)*matx],
-		 vertices[iy*matx+1],
-		 vertices[(iy+1)*matx],
-		 vertices[iy*matx],
+    for (iy=1; iy<plt->maty-1; iy++) {
+      normalavg3(plt->vertices[(iy-1)*plt->matx],
+		 plt->vertices[iy*plt->matx+1],
+		 plt->vertices[(iy+1)*plt->matx],
+		 plt->vertices[iy*plt->matx],
 		 n);
-      for (i=0; i<3; i++) normals[iy*matx][i]=n[i];
-      normalavg3(vertices[(iy+1)*matx+matx-1],
-		 vertices[(iy)*matx+matx-2],
-		 vertices[(iy-1)*matx+matx-1],
-		 vertices[iy*matx+matx-1],
+      for (i=0; i<3; i++) plt->normals[iy*plt->matx][i]=n[i];
+      normalavg3(plt->vertices[(iy+1)*plt->matx+plt->matx-1],
+		 plt->vertices[(iy)*plt->matx+plt->matx-2],
+		 plt->vertices[(iy-1)*plt->matx+plt->matx-1],
+		 plt->vertices[iy*plt->matx+plt->matx-1],
 		 n);
-      for (i=0; i<3; i++) normals[iy*matx+matx-1][i]=n[i];
+      for (i=0; i<3; i++) plt->normals[iy*plt->matx+plt->matx-1][i]=n[i];
     }
-    normalavg2(vertices[1],vertices[1*matx],vertices[0],n);
-    for (i=0; i<3; i++) normals[0][i]=n[i];
-    normalavg2(vertices[1*matx+matx-1],vertices[matx-2],vertices[matx-1],n);
-    for (i=0; i<3; i++) normals[matx-1][i]=n[i];
-    normalavg2(vertices[(maty-1)*matx+matx-2],
-	       vertices[(maty-2)*matx+matx-1],
-	       vertices[(maty-1)*matx+matx-1],
+    normalavg2(plt->vertices[1],plt->vertices[1*plt->matx],plt->vertices[0],n);
+    for (i=0; i<3; i++) plt->normals[0][i]=n[i];
+    normalavg2(plt->vertices[1*plt->matx+plt->matx-1],plt->vertices[plt->matx-2],plt->vertices[plt->matx-1],n);
+    for (i=0; i<3; i++) plt->normals[plt->matx-1][i]=n[i];
+    normalavg2(plt->vertices[(plt->maty-1)*plt->matx+plt->matx-2],
+	       plt->vertices[(plt->maty-2)*plt->matx+plt->matx-1],
+	       plt->vertices[(plt->maty-1)*plt->matx+plt->matx-1],
 	       n);
-    for (i=0; i<3; i++) normals[(maty-1)*matx+matx-1][i]=n[i];
-    normalavg2(vertices[(maty-2)*matx],
-	       vertices[(maty-1)*matx+1],
-	       vertices[(maty-1)*matx],
+    for (i=0; i<3; i++) plt->normals[(plt->maty-1)*plt->matx+plt->matx-1][i]=n[i];
+    normalavg2(plt->vertices[(plt->maty-2)*plt->matx],
+	       plt->vertices[(plt->maty-1)*plt->matx+1],
+	       plt->vertices[(plt->maty-1)*plt->matx],
 	       n);
-    for (i=0; i<3; i++) normals[(maty-1)*matx][i]=n[i];
+    for (i=0; i<3; i++) plt->normals[(plt->maty-1)*plt->matx][i]=n[i];
   }
          
 
 
-void displayRender(void)
+void displayRender(struct plot *plt)
   {
     int ix,iy;
     glEnableClientState(GL_NORMAL_ARRAY);
     glEnableClientState(GL_VERTEX_ARRAY);
-    glNormalPointer(GL_FLOAT,0,normals);
-    glVertexPointer(3,GL_FLOAT,0,vertices);
-    for (ix=0; ix<matx-1; ix++)
-      for (iy=0; iy<maty-1; iy++) {
+    glNormalPointer(GL_FLOAT,0,plt->normals);
+    glVertexPointer(3,GL_FLOAT,0,plt->vertices);
+    for (ix=0; ix<plt->matx-1; ix++)
+      for (iy=0; iy<plt->maty-1; iy++) {
 	glBegin(GL_QUADS);
-        glArrayElement(iy*matx+ix);
-	glArrayElement((iy+1)*matx+ix);
-	glArrayElement((iy+1)*matx+ix+1);
-	glArrayElement(iy*matx+ix+1);
+        glArrayElement(iy*plt->matx+ix);
+	glArrayElement((iy+1)*plt->matx+ix);
+	glArrayElement((iy+1)*plt->matx+ix+1);
+	glArrayElement(iy*plt->matx+ix+1);
 	glEnd();
       }
     glDisableClientState(GL_VERTEX_ARRAY);
@@ -268,9 +286,9 @@ void displayRender(void)
 
 void display(void)
 {
-   if (render) {
+   if (anim.render) {
      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-     if (alpha_blending)
+     if (anim.alpha_blending)
        glColor4f(0.7, 0.7, 0.7, alpha);
      else
        glColor3f(1.0, 1.0, 1.0);
@@ -290,20 +308,24 @@ void display(void)
    glDisable(GL_LIGHT0);
    displayBox();
    draw_axes();
-   if (render) {
+   if (anim.render) {
      glShadeModel(GL_SMOOTH);
      glEnable(GL_LIGHTING);
      glEnable(GL_LIGHT0);
      glEnable(GL_DEPTH_TEST);
      glFrontFace(GL_CW);
-     if (alpha_blending) {
+     if (anim.alpha_blending) {
        glEnable(GL_BLEND);
        glDepthMask(GL_FALSE);
        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
      }
    }
-   glCallList(dlist_base);
-   if (alpha_blending) {
+   if (anim.render) {
+     displayRender(&anim.plt[iplot]);
+   } else {
+     displayWireframe(&anim.plt[iplot]);
+   }
+   if (anim.alpha_blending) {
      glDepthMask(GL_TRUE);
      glDisable(GL_BLEND);
    }
@@ -336,11 +358,15 @@ void keyboard(unsigned char key, int x, int y)
    }
 }
 
-void spinDisplay(void)
+void idleDisplay(void)
   {
-    spinangle+=spinincr;
-    if (spinangle > 360.0) 
-      spinangle-=360.0;
+    if (anim.motion) {
+      spinangle+=spinincr;
+      if (spinangle > 360.0) 
+        spinangle-=360.0;
+    }
+    if (anim.animate)
+      iplot = (iplot + 1) % anim.size;
     usleep((unsigned long) sleeptime*1000.0);
     glutPostRedisplay();
   }
@@ -395,21 +421,66 @@ void read_string(FILE *ifile,char* str,int nmax)
   }
 }
 
+void read_plot(FILE *ifile, struct plot *plt)
+{
+   int ix,iy;
+   float value;
+  
+   if (2!=fscanf(ifile,"%d %d",&plt->matx,&plt->maty)) {
+      fprintf(stderr,"surfplt: arg for 'data' statement missing.\n");
+      exit(1);
+   }
+   if ((plt->matx<3) || (plt->maty<3)) {
+      fprintf(stderr,"surfplt: array dims must be greater than 2!\n");
+      exit(1);
+   }
+   plt->matrix=calloc((size_t) plt->matx*plt->maty,sizeof(float));
+   if (NULL==plt->matrix) {
+     fprintf(stderr,"surfplt: Cannot allocate memory.\n");
+     exit(1);
+   }
+   for (iy=0; iy<plt->maty;iy++)
+      for (ix=0; ix<plt->matx; ix++){
+	if (fscanf(ifile,"%f",&value) != 1) {
+	  fprintf(stderr,
+		  "surfplt: float array expected after 'data' statement.\n");
+	  exit(1);
+	}
+	plt->matrix[iy*plt->matx+ix]=value;
+      }
+}
+
+void find_min_max(struct plot *plt, float *min, float *max)
+{
+  int ix,iy;
+  float value;
+  for (iy = 0; iy < plt->maty; iy++)
+    for (ix = 0; ix < plt->matx; ix++) {
+      value = plt->matrix[iy*plt->matx+ix];
+      if (value < *min) *min = value;
+      if (value > *max) *max = value;
+    }
+}
+  
+      
 void readinput(FILE *ifile)
   {
-    int ix,iy,scanreturn;
-    float value;
-    char token[20];
-    while ((scanreturn=fscanf(ifile,"%s",token))!= EOF) {
-      if (0==strcmp(token,"box")) {
+    int scanreturn,iplt;
+    char token[MAXSTRLEN];
+    char c;
+    int data_seen = FALSE;
+    while ((scanreturn=fscanf(ifile,"%s",token))!= EOF && scanreturn == 1) {
+      if (token[0] == '#') {
+	while ((c = getc(ifile)) != EOF && c != '\n') ;
+      } else if (0==strcmp(token,"box")) {
 	if (3!=fscanf(ifile,"%f %f %f",&(box[0]),&(box[1]),&(box[2]))) {
-	  fprintf(stderr,"error: arg for box missing.\n");
+	  fprintf(stderr,"surfplt: arg for box missing.\n");
 	  exit(1);
 	}
       } else if (0==strcmp(token,"scale")) {
 	if (4!=fscanf(ifile,"%f %f %f %f",&(scaling[0][0]),&(scaling[0][1]),
 		     &(scaling[1][0]),&(scaling[1][1]))) {
-	  fprintf(stderr, "error: arg for scale missing.\n");
+	  fprintf(stderr, "surfplt: arg for scale missing.\n");
 	  exit(1);
 	}
       } else if (0 == strcmp(token,"xlabel")) {
@@ -418,58 +489,66 @@ void readinput(FILE *ifile)
 	read_string(ifile,ylabel,MAXSTRLEN);
       } else if (0 == strcmp(token,"zlabel")) {
 	read_string(ifile,zlabel,MAXSTRLEN);
+      } else if (0 == strcmp(token,"font_path")) {
+	read_string(ifile,font_path,MAXSTRLEN);
       } else if (0==strcmp(token,"data")) {
-	if (2!=fscanf(ifile,"%d %d",&matx,&maty)) {
-	      fprintf(stderr,"error: arg for data missing.\n");
-	      exit(1);
-	    }
-	    if ((matx<3) || (maty<3)) {
-	      fprintf(stderr,"error: array dims must be greater than 2!\n");
-	      exit(1);
-	    }
-	    matrix=calloc((size_t) matx*maty,sizeof(float));
-	    if (NULL==matrix) {
-	      fprintf(stderr,"Cannot allocate memory.\n");
-              exit(1);
-	    }
-	    for (iy=0; iy<maty;iy++)
-	      for (ix=0; ix<matx; ix++){
-		if (fscanf(ifile,"%f",&value) != 1) {
-		  fprintf(stderr,"float expected in input.\n");
-		  exit(1);
-		}
-		matrix[iy*matx+ix]=value;
-	      }
-	    scaling[2][0]=matrix[0];
-	    scaling[2][1]=matrix[0];
-	    for (ix=0; ix<matx; ix++)
-	      for (iy=0; iy<maty; iy++) {
-		value=matrix[iy*matx+ix];
-		if (value < scaling[2][0]) scaling[2][0]=value;
-		if (value > scaling[2][1]) scaling[2][1]=value;
-	      }
-	    return;
+        anim.animate = FALSE;
+        anim.size = 1;
+        anim.plt = (struct plot *) malloc((size_t) sizeof(struct plot));
+	if (anim.plt == NULL) {
+	  fprintf(stderr,"surfplt: Unable to allocate memory.\n");
+	  exit(2);
+	}
+	read_plot(ifile, &anim.plt[0]);
+        data_seen = TRUE;
+      } else if (0 == strcmp(token,"animate") &&
+		 1 == fscanf(ifile,"%d",&anim.size) &&
+		 anim.size >=1) {
+        anim.animate = TRUE;
+	anim.plt = (struct plot *) calloc((size_t) anim.size,
+					  sizeof(struct plot));
+	if (anim.plt == NULL) {
+	  fprintf(stderr,"surfplt: unable to allocate memory.\n");
+	  exit(2);
+	}
+	for (iplt = 0; iplt < anim.size; iplt++) {
+	  if (1 != fscanf(ifile,"%s",token) ||
+	      0 != strcmp(token,"data")) {
+	    fprintf(stderr,"surfplt: syntax error in input file.\n");
+	    exit(1);
+	  }
+	  read_plot(ifile, &anim.plt[iplt]);
+          data_seen = TRUE;
+	}
+      } else { /* no known token found. */
+	fprintf(stderr,"surfplt: illegal token '%s' in input file.\n",token);
+	exit(1);
       }
+    }
+    if (!data_seen) {
+      fprintf(stderr, "surfplt: error, not data read.\n");
+      exit(1);
     }
   }
 
 int main(int argc, char** argv)
 {
-   int argi;
+  int argi,i;
+  float min, max;
    char filename[MAXSTRLEN] = "";
    int read_from_file = FALSE;
    FILE *infile;
-   render=TRUE;
+   iplot = 0;
    width=500;
    height=500;
    spinangle=-45.0;
    thetaangle = 0.0;
    x_mouse = width/2;
    y_mouse = height/2;
-   motion=FALSE;
+   anim.motion=FALSE;
    spinincr=0.1;
    alpha = 1.0;
-   alpha_blending = FALSE;
+   anim.alpha_blending = FALSE;
    camera = 0.7;
    box[0]=1.0;
    box[1]=1.0;
@@ -487,105 +566,113 @@ int main(int argc, char** argv)
          strcpy(filename,argv[argi]);
          read_from_file = TRUE;
        } else {
-	 fprintf(stderr,"error: too many filenames in command line.\n");
+	 fprintf(stderr,"surfplt: too many filenames in command line.\n");
 	 exit(1);
        }
      } else if (0==strcmp(argv[argi],"-w")) {
-	render=0;
+	anim.render=FALSE;
       } else if (0==strcmp(argv[argi],"-m")) {
 	if (1!=sscanf(argv[++argi],"%f",&spinincr)) {
-	  fprintf(stderr,"error parsing command line.\n");
+	  fprintf(stderr,"surfplt: error parsing command line.\n");
 	  exit(1);
 	}
 	if (spinincr>360.0 || spinincr<-360.0) {
-	  fprintf(stderr,"warning: strange increment angle.\n");
+	  fprintf(stderr,"surfplt: strange increment angle.\n");
 	}
 	if (1!=sscanf(argv[++argi],"%f",&sleeptime)) {
-	  fprintf(stderr,"error parsing command line.\n");
+	  fprintf(stderr,"surfplt: error parsing command line.\n");
 	}
-	motion=1;
-      } else if (0==strcmp(argv[argi],"-h")) {
+	anim.motion=TRUE;
+     } else if (0 == strcmp(argv[argi],"-s")) {
+       if (1 != sscanf(argv[++argi],"%f",&sleeptime) || sleeptime < 0.0) {
+	 fprintf(stderr,"surfplt: error reading cmd line args.\n");
+	 exit(1);
+       }
+     } else if (0==strcmp(argv[argi],"-h")) {
 printf("usage: surfplt [-h] [-c] [-w] [-m <angle> <sleep>] [-a <alpha>] [-display <display>] <file>\n");
 	printf("   -h   print this help.\n");
 	printf("   -c <height>\n");
 	printf("        set vertical camera position.\n");
 	printf("   -w   draw wireframe only, do not render.\n");
         printf("   -a   make surface tranlucent by factor <alpha>.\n");
+        printf("   -s  <sleep>  set sleeptime in msecs for animation.\n");
 	printf("   -m <angle> <sleep>\n");
 	printf("        rotate the surface by increment <angle> every\n");
 	printf("        <sleep> milliseconds.\n");
 	exit(0);
       } else if (0==strcmp(argv[argi],"-c")) {
 	if (1!=sscanf(argv[++argi],"%f",&camera)) {
-	  fprintf(stderr,"error parsing command line.\n");
+	  fprintf(stderr,"surfplt: error parsing command line.\n");
 	  exit(1);
 	}
       } else if (0 == strcmp(argv[argi],"-a")) {
 	if (1 != sscanf(argv[++argi],"%f",&alpha)) {
-	  fprintf(stderr,"error parsing command line.\n");
+	  fprintf(stderr,"surfplt: error parsing command line.\n");
 	  exit(1);
 	} else if (alpha < 0.0 || alpha > 1.0) {
 	  fprintf(stderr,"surfplt: illegal alpha value in -a option.\n");
 	  exit(1);
-	} else if (!render) {
+	} else if (!anim.render) {
 	  fprintf(stderr, "surfplt: no alpha blending with wireframe.\n");
 	  exit(1);
 	} else {
-	  alpha_blending = TRUE;
+	  anim.alpha_blending = TRUE;
 	  fprintf(stderr,"surfplt: alpha blending is experimental!\n");
         }
-      }
+     } else { /* unknown command line option found. */
+       fprintf(stderr,"surfplt: unknown command line option '%s' found.\n",
+	       argv[argi]);
+       exit(1);
+     }
    }
    if (read_from_file)
      infile = fopen(filename, "r");
    else
      infile = stdin;
    if (!infile) {
-     fprintf(stderr, "error: unable to open input file.\n");
+     fprintf(stderr, "surfplt: unable to open input file '%s'.\n",
+	     filename);
      exit(2);
    }
    readinput(infile);
+
+   /* Compute min and max value of all matrices.. */
+   min = anim.plt[0].matrix[0];
+   max = anim.plt[0].matrix[0];
+   for (i = 0; i < anim.size; i++)
+     find_min_max(&anim.plt[i],&min,&max);
+   scaling[2][0] = min;
+   scaling[2][1] = max;
+   
    init_ftgl();
-   computevertices();
-   computenormals();
+   for (i = 0; i < anim.size; i++) {
+     computevertices(&anim.plt[i]);
+     computenormals(&anim.plt[i]);
+   }
    glutInit(&argc, argv);
-   if (render) {
-     if (alpha_blending) 
+   if (anim.render) {
+     if (anim.alpha_blending) 
        glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
      else
        glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
    } else {
      glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
    }
-   glutInitWindowSize (width,height); 
-   glutInitWindowPosition (100, 100);
-   glutCreateWindow (argv[0]);
-   if (render) glEnable(GL_DEPTH_TEST);
+   glutInitWindowSize(width,height); 
+   glutInitWindowPosition(100, 100);
+   glutCreateWindow(argv[0]);
+   if (anim.render) glEnable(GL_DEPTH_TEST);
    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
    glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-   /* Compile display list for surface. */
-   dlist_base = glGenLists(1);
-   if (dlist_base == 0) {
-     fprintf(stderr,"surfplt: Error, display list cannot be created.\n");
-     exit(1);
-   }
-   glNewList(dlist_base, GL_COMPILE);
-   if (render) {
-     displayRender();
-   } else {
-     displayWireframe();
-   }
-   glEndList();
    glutDisplayFunc(display); 
    glutReshapeFunc(reshape);
    glutKeyboardFunc(keyboard);
-   if (motion) {
-      glutIdleFunc(spinDisplay);
-   } else {
+   if (!anim.motion) {
      glutMouseFunc(mouse);
      glutMotionFunc(mouseMotion);
    }
+   if (anim.motion || anim.animate)
+      glutIdleFunc(idleDisplay);
    glutMainLoop();
-   glDeleteLists(dlist_base,1);
    return 0;
 }
