@@ -2,17 +2,26 @@
 .SH NAME
 xyplt \- 2D lines and points plot with OpenGL
 .SY xyplt
+.OP \-s sleep
 .RI [ file ]
 .YS
 .SH DESCRIPTION
 The
 .I xyplt(1)
-program plots lines and points with different colors in 2D using OpenGL.
+program plots and animates lines and points with different colors in
+2D using OpenGL.
 The input file structure is quite simple.
 .SH OPTIONS
-This program has no options.
+The following options can be given.
+.TP
+.BI \-s " sleep"
+Set the sleep time between time steps in the animation.
+The sleep time is given in milliseconds.
 .SH INPUT FILE FORMAT
 The input data is read from standard input or from the given file.
+The head of the file can contain comment lines, which start with an '#'
+character.
+
 First, you can include the axes labels.
 The labels are optional and the default is "x" and "y".
 
@@ -39,7 +48,20 @@ The next expression is:
 
 This are the coordinate ranges for the cube in which the lines and points
 are drawn.
-The default is 0.0 1.0 0.0 1.0 
+The default is 0.0 1.0 0.0 1.0.
+
+.RS
+.RI animate " nt"
+.RE
+
+The
+.B animate
+statement tells
+.I xyplt(1)
+to read in
+.I nt
+data blocks, one for each time step.
+If this statement is not given, no animation is done.
 
 .RS
 .RI data " n"

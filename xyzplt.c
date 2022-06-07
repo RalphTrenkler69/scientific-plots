@@ -459,6 +459,10 @@ printf("usage: surfplt [-h] [-c <height>] [-m <angle> <sleep>] [-display <displa
      infile = fopen(filename, "r");
    else
      infile = stdin;
+   if (!infile) {
+     fprintf(stderr, "xyzplt: cannot open file '%s'.\n",filename);
+     exit(3);
+   }
    readinput(infile);
    fclose(infile);
    init_ftgl();
