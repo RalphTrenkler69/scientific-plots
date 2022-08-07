@@ -1,9 +1,10 @@
 # Makefile for scientific OpenGL plot programs, called "plt-programs".
 # Written by Ralph Trenkler, February 2022.
-CFLAGS = -Wall -O
+CFLAGS = -Wall -Wpedantic -O
+CPPFLAGS = -Wall -O
 FFLAGS = -Wall -O
 
-all: surfplt xyzplt xyplt
+all: surfplt xyzplt xyplt surftest xyztest xytest
 
 surfplt: Makefile surfplt.o axes.o text3d.o
 	gcc $(CFLAGS) -o $@ surfplt.o axes.o text3d.o \
@@ -20,24 +21,36 @@ xyzplt.o: Makefile xyzplt.c
 	gcc $(CFLAGS) -c xyzplt.c
 
 axes.o: Makefile axes.cpp text3d.h
-	g++ $(CFLAGS) -c -I/usr/include/freetype2 axes.cpp
+	g++ $(CPPFLAGS) -c -I/usr/include/freetype2 axes.cpp
 
 axes2d.o: Makefile axes2d.cpp
-	g++ $(CFLAGS) -c -I/usr/include/freetype2 axes2d.cpp
+	g++ $(CPPFLAGS) -c -I/usr/include/freetype2 axes2d.cpp
 
 text3d.o: Makefile text3d.h text3d.cpp
-	g++ $(CFLAGS) -c -I/usr/include/freetype2 text3d.cpp
+	g++ $(CPPFLAGS) -c -I/usr/include/freetype2 text3d.cpp
 
 xyplt: Makefile xyplt.o axes2d.o text3d.o
-	g++ $(CFLAGS) -o xyplt xyplt.o axes2d.o text3d.o \
+	g++ $(CPPFLAGS) -o xyplt xyplt.o axes2d.o text3d.o \
 	-lGL -lGLU -lglut -lftgl -lfreetype -lm
 
 xyplt.o: Makefile xyplt.cpp
-	g++ $(CFLAGS) -c xyplt.cpp
+	g++ $(CPPFLAGS) -c xyplt.cpp
 
-install: surfplt xyzplt surfplt.1 xyzplt.1
+surftest: Makefile surftest.f90
+	gfortran $(FFLAGS) -o $@ surftest.f90
+
+xyztest: Makefile xyztest.f03
+	gfortran $(FFLAGS) -o $@ xyztest.f03
+
+xytest: Makefile xytest.f03
+	gfortran $(FFLAGS) -o $@ xytest.f03
+
+install: surfplt xyzplt surfplt.1 xyzplt.1 sciplot3d.py
 	install -o root -g staff -m 0555 surfplt xyzplt xyplt /usr/local/bin
 	if [ ! -d /usr/local/man ]; then mkdir /usr/local/man; fi
 	if [ ! -d /usr/local/man/man1 ]; then mkdir /usr/local/man/man1; fi
+	if [ ! -d /usr/local/lib/python3 ]; then mkdir /usr/local/lib/python3;\
+		fi
+	install -o root -g staff -m 0444 sciplot3d.py /usr/local/lib/python3
 	install -o root -g staff -m 0444 surfplt.1 xyzplt.1 xyplt.1 \
 		/usr/local/man/man1

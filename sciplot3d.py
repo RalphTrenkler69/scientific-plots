@@ -49,6 +49,7 @@ class Surfplt:
         for i in range(self.ny):
             for j in range(self.nx):
                 print(self.mat[i][j], file=fobj)
+        fobj.close()
 
 def funplot3d(fun, xmin, xmax, ymin, ymax, npoints = 30, xlabel = "x", \
               ylabel = "y", zlabel = "z", boxratio = (1,1,1), filename = "", \
@@ -78,7 +79,8 @@ class Curve:
     This python class describes a list of 3d points, which is a curve in 
     space. It can be made of points or be a line. The color can also be set.
     """
-    def __init__(self, is_line = True, color = (1,1,1), points = []):
+
+    def __init__(self, points, is_line = True, color = (1,1,1)):
         self.is_line, self.color, self.points = is_line, color, points
 
     def ch_color(self, color):
@@ -162,6 +164,7 @@ class Xyzplt:
                          len(curve.points)), file = fobj)
             for p in curve.points:
                 print("{} {} {}".format(*p), file = fobj)
+        fobj.close()       
 
 def paramplot3d(fun, tmin, tmax, npoints = 30, xlabel = "x", ylabel = "y", \
                   zlabel = "z", is_line = True, color = (1,0,0), \
