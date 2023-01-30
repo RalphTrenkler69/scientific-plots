@@ -47,10 +47,8 @@ xytest: Makefile xytest.f03
 
 install: surfplt xyzplt surfplt.1 xyzplt.1 sciplot3d.py
 	install -o root -g staff -m 0555 surfplt xyzplt xyplt /usr/local/bin
-	if [ ! -d /usr/local/man ]; then mkdir /usr/local/man; fi
-	if [ ! -d /usr/local/man/man1 ]; then mkdir /usr/local/man/man1; fi
-	if [ ! -d /usr/local/lib/python3 ]; then mkdir /usr/local/lib/python3;\
-		fi
+	mkdir -p /usr/local/man/man1
+	mkdir -p /usr/local/lib/python3
 	install -o root -g staff -m 0444 sciplot3d.py /usr/local/lib/python3
 	install -o root -g staff -m 0444 surfplt.1 xyzplt.1 xyplt.1 \
 		/usr/local/man/man1
