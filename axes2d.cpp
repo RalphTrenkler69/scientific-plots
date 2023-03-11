@@ -8,7 +8,7 @@
 #include <string>
 #include "text3d.h"
 
-const char font_path[] = "/usr/share/fonts/truetype/freefont/FreeMono.ttf";
+const char font_path[] = FONT;
 FTPolygonFont polyfont(font_path);
 
 const int maxlen = 512;

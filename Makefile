@@ -3,6 +3,8 @@
 CFLAGS = -Wall -Wpedantic -O
 CPPFLAGS = -Wall -O
 FFLAGS = -Wall -O
+# FONT=\"/usr/share/fonts/truetype/freefont/FreeMono.ttf\"
+FONT=\"/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf\"
 
 all: surfplt xyzplt xyplt surftest xyztest xytest
 
@@ -21,10 +23,10 @@ xyzplt.o: Makefile xyzplt.c
 	gcc $(CFLAGS) -c xyzplt.c
 
 axes.o: Makefile axes.cpp text3d.h
-	g++ $(CPPFLAGS) -c -I/usr/include/freetype2 axes.cpp
+	g++ $(CPPFLAGS) -DFONT=$(FONT) -c -I/usr/include/freetype2 axes.cpp
 
 axes2d.o: Makefile axes2d.cpp
-	g++ $(CPPFLAGS) -c -I/usr/include/freetype2 axes2d.cpp
+	g++ $(CPPFLAGS) -DFONT=$(FONT) -c -I/usr/include/freetype2 axes2d.cpp
 
 text3d.o: Makefile text3d.h text3d.cpp
 	g++ $(CPPFLAGS) -c -I/usr/include/freetype2 text3d.cpp

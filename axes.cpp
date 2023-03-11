@@ -4,13 +4,15 @@
 #include <cmath>
 #include <cfloat>
 #include <cstdio>
+#include <cstring>
 #include <string>
 #include "text3d.h"
 
-const char font_path[] = "/usr/share/fonts/truetype/freefont/FreeMono.ttf";
-FTPolygonFont polyfont(font_path);
+const char default_font_path[] = FONT;
 
-extern "C" void init_ftgl(void);
+FTPolygonFont polyfont(default_font_path);
+
+extern "C" void init_ftgl();
 extern "C" void draw_axes(void);
 
 const int maxlen = 512;
@@ -164,7 +166,7 @@ void init_ftgl()
 {
   if (polyfont.Error()) {
     
-    fprintf(stderr,"error: font '%s' not found.\n",font_path);
+    fprintf(stderr,"error: font '%s' not found.\n",default_font_path);
     exit(1);
   }
 }
