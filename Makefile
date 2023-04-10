@@ -3,8 +3,7 @@
 CFLAGS = -Wall -Wpedantic -O
 CPPFLAGS = -Wall -O
 FFLAGS = -Wall -O
-# FONT=\"/usr/share/fonts/truetype/freefont/FreeMono.ttf\"
-FONT=\"/usr/share/fonts/truetype/ttf-bitstream-vera/Vera.ttf\"
+FONT=\"/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf\"
 
 all: surfplt xyzplt xyplt surftest xyztest xytest
 
