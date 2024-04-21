@@ -14,6 +14,7 @@
 #define ROTFACTOR 0.4
 #define MAXSTRLEN 512
 
+#define in_interval(a,b,x)  ((a) <= (x) && (x) <= (b))
 
 struct pltobject {
   float color[3];
@@ -265,6 +266,13 @@ void read_plot(FILE *file, struct plot *plt)
 	     &(plt->lines[iline].color[1]),
 	     &(plt->lines[iline].color[2]),
 	     &(plt->lines[iline].npoints))) {
+        if (!in_interval(0.0,1.0,plt->lines[iline].color[0])||
+            !in_interval(0.0,1.0,plt->lines[iline].color[1])||
+            !in_interval(0.0,1.0,plt->lines[iline].color[2])) {
+              fprintf(stderr,
+                "xyzplt: color value not in range [0.0...1.0].\n");
+              exit(1);
+        }
 	plt->lines[iline].vertices=
 	  (float (*)[3]) calloc((size_t) plt->lines[iline].npoints,
 			   (size_t) sizeof(float[3]));
