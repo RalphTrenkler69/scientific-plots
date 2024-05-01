@@ -41,15 +41,17 @@ int iplot = 0;
 char xlabel[MAXSTRLEN], ylabel[MAXSTRLEN], zlabel[MAXSTRLEN];
 char font_path[MAXSTRLEN] = "";
 
+/* Set ambient and diffuse material color, which is set 
+in the function "init()".*/
+GLfloat material_color[4] = {1.0,0.3,0.3,1.0};
+
 void init(void) 
 {
    GLfloat mat_specular[] = {1.0,1.0,1.0,1.0};
-   GLfloat mat_ambient[] = {0.5,0.0,0.0,1.0};
-   GLfloat mat_diffuse[] = {0.8,0.6,0.6,1.0};
    GLfloat mat_shininess[] = {30.0};
    GLfloat light_position[] = {1.0,1.0,1.0,0.0};
    GLfloat white_light[] = {1.0,1.0,1.0,1.0};
-   GLfloat lmodel_ambient[] = {0.9,0.0,0.0,1.0};
+   GLfloat lmodel_ambient[] = {0.5,0.5,0.5,1.0};
    glClearColor (0.0, 0.0, 0.0, 0.0);
    if (! anim.render) {
      glShadeModel (GL_FLAT);
@@ -58,8 +60,8 @@ void init(void)
      glLightModelfv(GL_LIGHT_MODEL_AMBIENT, lmodel_ambient);
      glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
      glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat_specular);
-     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_ambient);
-     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_diffuse);
+     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, material_color);
+     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, material_color);
      glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);
      glLightfv(GL_LIGHT0, GL_POSITION, light_position);
      glLightfv(GL_LIGHT0, GL_DIFFUSE, white_light);
@@ -491,6 +493,12 @@ void readinput(FILE *ifile)
 	read_string(ifile,zlabel,MAXSTRLEN);
       } else if (0 == strcmp(token,"font_path")) {
 	read_string(ifile,font_path,MAXSTRLEN);
+      } else if (0 == strcmp(token,"color")) {
+        if (3 != fscanf(ifile,"%f %f %f",&material_color[0],
+          &material_color[1],&material_color[2])) {
+            fprintf(stderr,"surfplt: args for color missing.\n");
+            exit(1);
+          }
       } else if (0==strcmp(token,"data")) {
         anim.animate = FALSE;
         anim.size = 1;
