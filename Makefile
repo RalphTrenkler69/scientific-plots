@@ -1,8 +1,8 @@
 # Makefile for scientific OpenGL plot programs, called "plt-programs".
 # Written by Ralph Trenkler, February 2022.
-CFLAGS = -Wall -Wpedantic -O
-CPPFLAGS = -Wall -O
-FFLAGS = -Wall -O
+CFLAGS = -O
+CPPFLAGS = -O
+FFLAGS = -O
 FONT=\"/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf\"
 
 all: surfplt xyzplt xyplt surftest xyztest xytest

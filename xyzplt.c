@@ -17,8 +17,9 @@
 #define in_interval(a,b,x)  ((a) <= (x) && (x) <= (b))
 
 struct pltobject {
-  float color[3];
+  float color[4];
   int   isline;
+  int   with_blending;
   int   npoints;
   float (*vertices)[3];
 }; 
@@ -45,6 +46,8 @@ extern void init_ftgl(), draw_axes();
 
 void init(void) 
 {
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glClearColor (0.0, 0.0, 0.0, 0.0);
    glShadeModel (GL_FLAT);
    iplot = 0;
@@ -98,7 +101,7 @@ void displayData(void)
       } else {
 	glBegin(GL_POINTS);
       }
-      glColor3fv(plt->lines[iline].color);
+      glColor4fv(plt->lines[iline].color);
       for (i=0; i<plt->lines[iline].npoints; i++) {
 	doScaling(plt->lines[iline].vertices[i],vertex);
 	glVertex3f(vertex[0],vertex[2],-vertex[1]);
@@ -255,39 +258,82 @@ void read_plot(FILE *file, struct plot *plt)
 	 1 == fscanf(file,"%s",token); iline++) {
       if (0==strcmp(token,"points")) {
 	plt -> lines[iline].isline=FALSE;
+  plt -> lines[iline].with_blending=FALSE;
+      } else if (0==strcmp(token,"points_a")) {
+  plt -> lines[iline].isline=FALSE;
+  plt -> lines[iline].with_blending=TRUE;
      } else if (0==strcmp(token,"line")) {
 	plt -> lines[iline].isline=TRUE;
+  plt -> lines[iline].with_blending=FALSE;
+     } else if (0==strcmp(token,"line_a")) {
+	plt -> lines[iline].isline=TRUE;
+  plt -> lines[iline].with_blending=TRUE;
      } else {
 	fprintf(stderr,"xyzplt: no 'line' or 'points' directive.\n");
 	exit(1);
      }
-     if (4==fscanf(file,"%f %f %f %d",
-             &(plt->lines[iline].color[0]),
-	     &(plt->lines[iline].color[1]),
-	     &(plt->lines[iline].color[2]),
-	     &(plt->lines[iline].npoints))) {
-        if (!in_interval(0.0,1.0,plt->lines[iline].color[0])||
-            !in_interval(0.0,1.0,plt->lines[iline].color[1])||
-            !in_interval(0.0,1.0,plt->lines[iline].color[2])) {
-              fprintf(stderr,
-                "xyzplt: color value not in range [0.0...1.0].\n");
+      if (plt -> lines[iline].with_blending) {
+          /* With blending. */
+          if (5==fscanf(file,"%f %f %f %f %d",
+                  &(plt->lines[iline].color[0]),
+            &(plt->lines[iline].color[1]),
+            &(plt->lines[iline].color[2]),
+            &(plt->lines[iline].color[3]),
+            &(plt->lines[iline].npoints))) {
+              if (!in_interval(0.0,1.0,plt->lines[iline].color[0])||
+                  !in_interval(0.0,1.0,plt->lines[iline].color[1])||
+                  !in_interval(0.0,1.0,plt->lines[iline].color[2])||
+                  !in_interval(0.0,1.0,plt->lines[iline].color[3])) {
+                    fprintf(stderr,
+                      "xyzplt: color value not in range [0.0...1.0].\n");
+                    exit(1);
+              }
+        plt->lines[iline].vertices=
+          (float (*)[3]) calloc((size_t) plt->lines[iline].npoints,
+              (size_t) sizeof(float[3]));
+        for (i=0; i<plt->lines[iline].npoints; i++)
+          for (k=0; k<3; k++)
+            if (1 != fscanf(file,"%f",
+                &(plt->lines[iline].vertices[i][k]))) {
+              fprintf(stderr, "xyzplt: float in input expected.\n");
               exit(1);
+            }
+        } else {
+        fprintf(stderr,
+          "xyzplt: missing arg for 'points_a'.\n");
+        exit(1);
         }
-	plt->lines[iline].vertices=
-	  (float (*)[3]) calloc((size_t) plt->lines[iline].npoints,
-			   (size_t) sizeof(float[3]));
-	for (i=0; i<plt->lines[iline].npoints; i++)
-	   for (k=0; k<3; k++)
-	     if (1 != fscanf(file,"%f",
-			     &(plt->lines[iline].vertices[i][k]))) {
-	       fprintf(stderr, "xyzplt: float in input expected.\n");
-	       exit(1);
-	     }
-     } else {
-	  fprintf(stderr,
-		  "xyzplt: missing arg for 'points' or 'line'.\n");
-	  exit(1);
-	}
+      } else {
+        /* no blending */
+          if (4==fscanf(file,"%f %f %f %d",
+                  &(plt->lines[iline].color[0]),
+            &(plt->lines[iline].color[1]),
+            &(plt->lines[iline].color[2]),
+            &(plt->lines[iline].npoints))) {
+              if (!in_interval(0.0,1.0,plt->lines[iline].color[0])||
+                  !in_interval(0.0,1.0,plt->lines[iline].color[1])||
+                  !in_interval(0.0,1.0,plt->lines[iline].color[2])) {
+                    fprintf(stderr,
+                      "xyzplt: color value not in range [0.0...1.0].\n");
+                    exit(1);
+              }
+        plt -> lines[iline].color[3]=1.0; /* opaque */
+        plt->lines[iline].vertices=
+          (float (*)[3]) calloc((size_t) plt->lines[iline].npoints,
+              (size_t) sizeof(float[3]));
+        for (i=0; i<plt->lines[iline].npoints; i++)
+          for (k=0; k<3; k++)
+            if (1 != fscanf(file,"%f",
+                &(plt->lines[iline].vertices[i][k]))) {
+              fprintf(stderr, "xyzplt: float in input expected.\n");
+              exit(1);
+            }
+        } else {
+        fprintf(stderr,
+          "xyzplt: missing arg for 'points' or 'line'.\n");
+        exit(1);
+        }
+      }
      }
 }
   
@@ -475,7 +521,7 @@ printf("usage: surfplt [-h] [-c <height>] [-m <angle> <sleep>] [-display <displa
    fclose(infile);
    init_ftgl();
    glutInit(&argc, argv);
-   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
    glutInitWindowSize (width,height); 
    glutInitWindowPosition (100, 100);
    glutCreateWindow (argv[0]);

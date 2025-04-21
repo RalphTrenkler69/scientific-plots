@@ -84,7 +84,7 @@ blocks, one for each time step.
 If this statement is not given, no animation is done.
 
 .RS
-.RI data " n"
+.RI data " m"
 .RE
 
 This directive gives the number of
@@ -113,6 +113,35 @@ This statement plots
 .I n
 points in the RGB colors
 .I red green blue.
+
+.RS
+.RI line_a " red green blue alpha n"
+.I vertex-x vertex-y vertex-z "..."
+.RE
+
+This statement plots a line in the RGB colors
+.I red green blue
+with alpha blending
+.I alpha
+and
+.I n
+vertices.
+.I Alpha 
+must be a number between 0.0 and 1.0.
+.RS
+.RI points_a " red green blue alpha n"
+.I vertex-x vertex-y vertex-z "..."
+.RE
+
+This statement plots points in the RGB colors
+.I red green blue
+with alpha blending
+.I alpha
+and
+.I n
+points.
+.I Alpha 
+must be a number between 0.0 and 1.0.
 .SH AUTHOR
 This program was written by Ralph Trenkler
 .MT
