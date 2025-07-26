@@ -7,12 +7,14 @@
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
+#include "fort_record.h"
 
 #define TRUE 1
 #define FALSE 0
 #define ROTMIN 20
 #define ROTFACTOR 0.4
 #define MAXSTRLEN 512
+#define FORTSTRLEN 24
 
 #define in_interval(a,b,x)  ((a) <= (x) && (x) <= (b))
 
@@ -36,11 +38,32 @@ struct animation {
   struct plot *plt;
 };
 
+struct fort_record_1 {
+  float box[3];
+  float scaling[3][2];
+  char xlabel[FORTSTRLEN];
+  char ylabel[FORTSTRLEN];
+  char zlabel[FORTSTRLEN];
+  int animate;
+};
+
+struct fort_record_2 {
+  int num_lines;
+};
+
+struct fort_record_3 {
+  char isline[8];
+  char with_blending[8];
+  float color[4];
+  int npoints;
+};
+
 struct animation anim = {FALSE, FALSE, 1, (void *) NULL};
 
 float camera,spinangle,thetaangle,spinincr,sleeptime,box[3],scaling[3][2];
 int width,height,x_mouse,y_mouse,iplot;
 char xlabel[MAXSTRLEN], ylabel[MAXSTRLEN], zlabel[MAXSTRLEN];
+int fort_input = FALSE;
 
 extern void init_ftgl(), draw_axes();
 
@@ -436,10 +459,125 @@ void readinput(FILE *file)
     }
 }
 
+void read_fort_input(FILE *file) {
+  struct fort_record_1 rec1;
+  struct fort_record_2 rec2;
+  struct fort_record_3 rec3;
+  int i, j, k;
+
+  if (fread_fort_record(file, &rec1, sizeof(rec1)) != 0) {
+    fprintf(stderr,"xyzplt: error reading Fortran record 1.\n");
+    exit(1);
+  }
+  for (i = 0; i < 3; i++) {
+    box[i] = rec1.box[i];
+    for (j = 0; j < 2; j++) {
+      scaling[i][j] = rec1.scaling[i][j];
+    }
+  }
+  fort_str_to_c(rec1.xlabel, FORTSTRLEN);
+  fort_str_to_c(rec1.ylabel, FORTSTRLEN);
+  fort_str_to_c(rec1.zlabel, FORTSTRLEN);
+  strncpy(xlabel, rec1.xlabel, FORTSTRLEN);
+  strncpy(ylabel, rec1.ylabel, FORTSTRLEN);
+  strncpy(zlabel, rec1.zlabel, FORTSTRLEN);
+  
+  if (rec1.animate > 0) {
+    anim.animate = TRUE;
+    anim.size = rec1.animate;
+  } else if (rec1.animate == 0) {
+    anim.animate = FALSE;
+    anim.size = 1;
+  } else {
+    fprintf(stderr,
+      "xyzplt: invalid animate value %d in fortran bin file.\n", rec1.animate);
+    exit(1);
+  }
+  if (!(anim.plt = (struct plot *) calloc((size_t) anim.size,
+               sizeof(struct plot)))) {
+    fprintf(stderr,"xyzplt: unable to allocate memory.\n");
+    exit(2);
+  }
+  for (i = 0; i < anim.size; i++) {
+    if (fread_fort_record(file, &rec2, sizeof(rec2)) != 0) {
+      fprintf(stderr,"xyzplt: error reading Fortran record 2.\n");
+      exit(1);
+    }
+    anim.plt[i].size = rec2.num_lines;
+    if (anim.plt[i].size <= 0) {
+      fprintf(stderr,"xyzplt: invalid number of lines %d in fortran bin file.\n",
+              anim.plt[i].size);
+      exit(1);
+    }
+    if (!(anim.plt[i].lines = (struct pltobject *)
+          calloc((size_t) anim.plt[i].size, sizeof(struct pltobject)))) {
+      fprintf(stderr,"xyzplt: unable to allocate memory.\n");
+      exit(2);
+    }
+    for (j = 0; j < anim.plt[i].size; j++) {
+      if (fread_fort_record(file, &rec3, sizeof(rec3)) != 0) {
+        fprintf(stderr,"xyzplt: error reading Fortran record 3.\n");
+        exit(1);
+      }
+      fort_str_to_c(rec3.isline, 8);
+      fort_str_to_c(rec3.with_blending, 8);
+      switch ((char) toupper(rec3.isline[0])) {
+        case 'P':
+          anim.plt[i].lines[j].isline = FALSE;
+          break;
+        case 'L':
+          anim.plt[i].lines[j].isline = TRUE;
+          break;
+        default:
+          fprintf(stderr,"xyzplt: unknown line type '%s'.\n", rec3.isline);
+          exit(1);
+      }
+      switch ((char) toupper(rec3.with_blending[0])) {
+        case 'N':
+          anim.plt[i].lines[j].with_blending = FALSE;
+          break;
+        case 'A':
+        case 'Y':
+          anim.plt[i].lines[j].with_blending = TRUE;
+          break;
+        default:
+          fprintf(stderr,"xyzplt: unknown blending type '%s'.\n", rec3.with_blending);
+          exit(1);
+      }
+      for (k = 0; k < 4; k++) {
+        if (!in_interval(0.0, 1.0, rec3.color[k])) {
+          fprintf(stderr,"xyzplt: binary fort file: color value not in range [0.0...1.0].\n");
+          exit(1);
+        }
+        anim.plt[i].lines[j].color[k] = rec3.color[k];
+        if (k == 3 && !anim.plt[i].lines[j].with_blending) 
+          anim.plt[i].lines[j].color[k] = 1.0; /* opaque */
+      }
+      anim.plt[i].lines[j].npoints = rec3.npoints;
+      if (rec3.npoints <= 0) {
+        fprintf(stderr,"xyzplt: invalid number of points %d in fortran bin file.\n",
+                rec3.npoints);
+        exit(1);
+      } 
+      if (!(anim.plt[i].lines[j].vertices =
+            (float (*)[3]) calloc((size_t) rec3.npoints,
+                                  sizeof(float[3])))) {
+        fprintf(stderr,"xyzplt: unable to allocate memory.\n");
+        exit(2);
+      }
+      if (fread_fort_record(file,(void *) anim.plt[i].lines[j].vertices,
+        3*rec3.npoints*sizeof(float)) != 0) {
+        fprintf(stderr,"xyzplt: error reading vertices.\n");
+        exit(1);
+      }
+    }
+  }
+}
+
 int main(int argc, char** argv)
 {
    int argi;
-   char *filename;
+   char *filename = "";
    FILE *infile;
    int read_from_file = FALSE;
    width=500;
@@ -495,14 +633,18 @@ int main(int argc, char** argv)
 	  fprintf(stderr,"xyzplt: float in args expected.\n");
 	  exit(1);
 	}
+      } else if (0 == strcmp(argv[argi],"-f")) {
+        fort_input = TRUE;
       } else if (0==strcmp(argv[argi],"-h")) {
-printf("usage: surfplt [-h] [-c <height>] [-m <angle> <sleep>] [-display <display>] <file>\n");
+printf("usage: surfplt [-h] [-c <height>] [-m <angle> <sleep>] [-s <sleep>>] <file>\n");
 	printf("   -h   print this help.\n");
 	printf("   -c <height>   set camera height.\n");
         printf("   -s <sleeptime>  set sleeptime for animation,\n");
 	printf("   -m <angle> <sleep>\n");
 	printf("        rotate the surface by increment <angle> every\n");
 	printf("        <sleep> milliseconds.\n");
+  printf("   -s <sleep> set sleeptime for animation,\n");
+  printf("   -f  read input in Fortran binary format.\n");
 	exit(0);
       } else {
 	fprintf(stderr, "xyzplt: unknown option %s.\n",argv[argi]);
@@ -510,14 +652,20 @@ printf("usage: surfplt [-h] [-c <height>] [-m <angle> <sleep>] [-display <displa
       }
    }
    if (read_from_file)
-     infile = fopen(filename, "r");
-   else
+     infile = fopen(filename, (fort_input ? "rb" : "r"));
+   else if (fort_input) {
+     fprintf(stderr,"xyzplt: no fortran binary input file specified.\n");
+     exit(1);
+   } else
      infile = stdin;
    if (!infile) {
      fprintf(stderr, "xyzplt: cannot open file '%s'.\n",filename);
      exit(3);
    }
-   readinput(infile);
+   if (fort_input)
+      read_fort_input(infile);
+   else 
+      readinput(infile);
    fclose(infile);
    init_ftgl();
    glutInit(&argc, argv);

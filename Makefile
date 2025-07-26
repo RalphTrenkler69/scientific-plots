@@ -1,6 +1,6 @@
 # Makefile for scientific OpenGL plot programs, called "plt-programs".
 # Written by Ralph Trenkler, February 2022.
-CFLAGS = -O
+CFLAGS = -O -Wall
 CPPFLAGS = -O
 FFLAGS = -O
 FONT=\"/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf\"
@@ -14,12 +14,15 @@ surfplt: Makefile surfplt.o axes.o text3d.o
 surfplt.o: Makefile surfplt.c
 	gcc $(CFLAGS) -c surfplt.c
 
-xyzplt: Makefile xyzplt.o axes.o text3d.o
-	gcc $(CFLAGS) -o $@ xyzplt.o axes.o text3d.o \
+xyzplt: Makefile xyzplt.o axes.o text3d.o fort_record.o
+	gcc $(CFLAGS) -o $@ xyzplt.o fort_record.o axes.o text3d.o \
 	-lGL -lGLU -lglut -lftgl -lfreetype -lm -lstdc++
 
 xyzplt.o: Makefile xyzplt.c
 	gcc $(CFLAGS) -c xyzplt.c
+
+fort_record.o: Makefile fort_record.c
+	gcc $(CFLAGS) -c fort_record.c
 
 axes.o: Makefile axes.cpp text3d.h
 	g++ $(CPPFLAGS) -DFONT=$(FONT) -c -I/usr/include/freetype2 axes.cpp
