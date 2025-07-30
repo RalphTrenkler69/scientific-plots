@@ -35,7 +35,7 @@ struct animation anim = {1, FALSE, FALSE, TRUE, FALSE, (void *) NULL};
 
 float spinangle,thetaangle,camera,spinincr,sleeptime,box[3],scaling[3][2];
 int width,height,x_mouse,y_mouse;
-float alpha;
+float alpha = 1.0; /* alpha value for transparency */
 int iplot = 0;
 
 char xlabel[MAXSTRLEN], ylabel[MAXSTRLEN], zlabel[MAXSTRLEN];
@@ -43,15 +43,17 @@ char font_path[MAXSTRLEN] = "";
 
 /* Set ambient and diffuse material color, which is set 
 in the function "init()".*/
-GLfloat material_color[4] = {1.0,0.3,0.3,1.0};
+GLfloat material_color[4] = {1.0,0.3,0.3, 1.0};
 
 void init(void) 
 {
-   GLfloat mat_specular[] = {1.0,1.0,1.0,1.0};
+   GLfloat mat_specular[] = {1.0,1.0,1.0, 1.0};
    GLfloat mat_shininess[] = {30.0};
    GLfloat light_position[] = {1.0,1.0,1.0,0.0};
-   GLfloat white_light[] = {1.0,1.0,1.0,1.0};
-   GLfloat lmodel_ambient[] = {0.5,0.5,0.5,1.0};
+   GLfloat white_light[] = {1.0,1.0,1.0, 1.0};
+   GLfloat lmodel_ambient[] = {0.5,0.5,0.5, 1.0};
+   if (anim.alpha_blending)
+      material_color[3] = alpha;
    glClearColor (0.0, 0.0, 0.0, 0.0);
    if (! anim.render) {
      glShadeModel (GL_FLAT);
@@ -290,9 +292,12 @@ void display(void)
 {
    if (anim.render) {
      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-     if (anim.alpha_blending)
-       glColor4f(0.7, 0.7, 0.7, alpha);
-     else
+     if (anim.alpha_blending) {
+        glEnable(GL_BLEND);
+        /* glDepthMask(GL_FALSE);*/
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glColor4f(1.0, 1.0, 1.0, 1.0);
+     } else
        glColor3f(1.0, 1.0, 1.0);
    } else {
      glClear (GL_COLOR_BUFFER_BIT);
@@ -316,11 +321,6 @@ void display(void)
      glEnable(GL_LIGHT0);
      glEnable(GL_DEPTH_TEST);
      glFrontFace(GL_CW);
-     if (anim.alpha_blending) {
-       glEnable(GL_BLEND);
-       glDepthMask(GL_FALSE);
-       glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-     }
    }
    if (anim.render) {
      displayRender(&anim.plt[iplot]);
@@ -625,7 +625,7 @@ printf("usage: surfplt [-h] [-c] [-w] [-m <angle> <sleep>] [-a <alpha>] [-displa
 	  exit(1);
 	} else {
 	  anim.alpha_blending = TRUE;
-	  fprintf(stderr,"surfplt: alpha blending is experimental!\n");
+	  // fprintf(stderr,"surfplt: alpha blending is experimental!\n");
         }
      } else { /* unknown command line option found. */
        fprintf(stderr,"surfplt: unknown command line option '%s' found.\n",
