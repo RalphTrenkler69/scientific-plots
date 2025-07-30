@@ -1,7 +1,7 @@
 # Makefile for scientific OpenGL plot programs, called "plt-programs".
 # Written by Ralph Trenkler, February 2022.
-CFLAGS = -O -Wall
-CPPFLAGS = -O
+CFLAGS = -O3 -Wall -Wextra -march=native -mtune=native
+CPPFLAGS = -O3 -Wall -Wextra -march=native -mtune=native
 FFLAGS = -O
 FONT=\"/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf\"
 
