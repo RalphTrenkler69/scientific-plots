@@ -63,7 +63,8 @@ struct animation anim = {FALSE, FALSE, 1, (void *) NULL};
 float camera,spinangle,thetaangle,spinincr,sleeptime,box[3],scaling[3][2];
 int width,height,x_mouse,y_mouse,iplot;
 char xlabel[MAXSTRLEN], ylabel[MAXSTRLEN], zlabel[MAXSTRLEN];
-int fort_input = FALSE;
+int fort_input = FALSE, with_glob_blending = FALSE;
+float glob_alpha = 1.0;
 
 extern void init_ftgl(), draw_axes();
 
@@ -116,7 +117,7 @@ void doScaling(float *a, float *b)
 void displayData(void)
   {
     int iline,i;
-    float vertex[3];
+    float vertex[3],*clr;
     struct plot *plt = &anim.plt[iplot];
     for (iline=0; iline<plt->size; iline++) {
       if (plt->lines[iline].isline) {
@@ -124,7 +125,14 @@ void displayData(void)
       } else {
 	glBegin(GL_POINTS);
       }
-      glColor4fv(plt->lines[iline].color);
+      clr = plt->lines[iline].color;
+      if (with_glob_blending) {
+        glColor4f(clr[0], clr[1], clr[2], glob_alpha);
+      } else if (plt->lines[iline].with_blending){
+        glColor4fv(clr);
+      } else {
+        glColor3f(clr[0], clr[1], clr[2]);
+      }
       for (i=0; i<plt->lines[iline].npoints; i++) {
 	doScaling(plt->lines[iline].vertices[i],vertex);
 	glVertex3f(vertex[0],vertex[2],-vertex[1]);
@@ -635,6 +643,13 @@ int main(int argc, char** argv)
 	}
       } else if (0 == strcmp(argv[argi],"-f")) {
         fort_input = TRUE;
+      } else if (0 == strcmp(argv[argi],"-a")) {
+        with_glob_blending = TRUE;
+        if (1 != sscanf(argv[++argi],"%f",&glob_alpha) ||
+            glob_alpha < 0.0 || glob_alpha > 1.0) {
+          fprintf(stderr,"xyzplt: float in args expected.\n");
+          exit(1);
+        }
       } else if (0==strcmp(argv[argi],"-h")) {
 printf("usage: surfplt [-h] [-c <height>] [-m <angle> <sleep>] [-s <sleep>>] <file>\n");
 	printf("   -h   print this help.\n");
@@ -645,6 +660,8 @@ printf("usage: surfplt [-h] [-c <height>] [-m <angle> <sleep>] [-s <sleep>>] <fi
 	printf("        <sleep> milliseconds.\n");
   printf("   -s <sleep> set sleeptime for animation,\n");
   printf("   -f  read input in Fortran binary format.\n");
+  printf("   -a <alpha>  set global alpha value for blending.\n");
+  printf("        <alpha> must be in range [0.0...1.0].\n");
 	exit(0);
       } else {
 	fprintf(stderr, "xyzplt: unknown option %s.\n",argv[argi]);
