@@ -17,8 +17,6 @@
 
 extern void draw_axes(void), init_ftgl(void);
 
-#define AVG(f1,f3,dx) (((f3)-(f1))/(2*(dx)))
-
 struct plot {
   int matx, maty;
   float *matrix;
@@ -172,12 +170,27 @@ void normalize(float a[], float n[])
     n[k] = a[k]/norm;
 }
 
+/* normalavg4: Compute normal vector at vertex b as average of 4 normals. */
 void normalavg4(float *a1,float *a2,float *a3,float *a4,float *b, float *n,
 		int matx, int maty)
   {
-    n[1] = 1.0;
-    n[0] = -AVG(a4[1],a2[1],2*box[0]/(matx-1));
-    n[2] = AVG(a1[1],a3[1],2*box[1]/(maty-1));
+    float diff1[3], diff2[3], diff3[3], diff4[3];
+    float n1[3], n2[3], n3[3], n4[3];
+    int i;
+    vectorminus(a1,b,diff1);
+    vectorminus(a2,b,diff2);
+    vectorminus(a3,b,diff3);
+    vectorminus(a4,b,diff4);
+    crossprod(diff1,diff2,n1);
+    crossprod(diff2,diff3,n2);
+    crossprod(diff3,diff4,n3);
+    crossprod(diff4,diff1,n4);
+    normalize(n1,n1);
+    normalize(n2,n2);
+    normalize(n3,n3);
+    normalize(n4,n4);
+    for (i=0; i<3; i++)
+      n[i] = n1[i]+n2[i]+n3[i]+n4[i];
     normalize(n,n);
   }
 
