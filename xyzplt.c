@@ -17,6 +17,8 @@
 #define FORTSTRLEN 24
 
 #define in_interval(a,b,x)  ((a) <= (x) && (x) <= (b))
+#define set_matrix(i,j)     matrix[i][j]=2.0*box[j]/(scaling[j][1]-scaling[j][0])
+#define set_matrix_3(i,j)   matrix[i][3]=-box[j]-2.0*box[j]*scaling[j][0]/(scaling[j][1]-scaling[j][0])
 
 struct pltobject {
   float color[4];
@@ -105,6 +107,7 @@ void displayBox(void)
    glEnd();
  }
 
+/*
 void doScaling(float *a, float *b)
   {
     int k;
@@ -113,12 +116,33 @@ void doScaling(float *a, float *b)
 	(scaling[k][1]-scaling[k][0]);
     }
   }
+*/
+
+void calcMatrix(float matrix[4][4])
+  {
+    int i,j;
+    for (i=0; i<4; i++)
+      for (j=0; j<4; j++)
+        matrix[i][j]=0.0;
+    set_matrix(0,0);
+    set_matrix(1,2);
+    set_matrix(2,1);
+    matrix[1][2]= -matrix[1][2]; /* invert y axis */
+    set_matrix_3(0,0);
+    set_matrix_3(1,2);
+    set_matrix_3(2,1);
+    matrix[1][3]= -matrix[1][3]; /* invert y axis */
+    matrix[3][3]=1.0;
+  }
 
 void displayData(void)
   {
     int iline,i;
-    float vertex[3],*clr;
+    float *clr,matrix[4][4];
     struct plot *plt = &anim.plt[iplot];
+    calcMatrix(matrix);
+    glPushMatrix();
+    glMultMatrixf((float *) matrix);
     for (iline=0; iline<plt->size; iline++) {
       if (plt->lines[iline].isline) {
 	glBegin(GL_LINE_STRIP);
@@ -134,11 +158,11 @@ void displayData(void)
         glColor3f(clr[0], clr[1], clr[2]);
       }
       for (i=0; i<plt->lines[iline].npoints; i++) {
-	doScaling(plt->lines[iline].vertices[i],vertex);
-	glVertex3f(vertex[0],vertex[2],-vertex[1]);
+	glVertex3fv(plt->lines[iline].vertices[i]);
       }
       glEnd();
     }
+    glPopMatrix();
   }
 
 void enable_clipping()
