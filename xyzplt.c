@@ -138,11 +138,8 @@ void calcMatrix(float matrix[4][4])
 void displayData(void)
   {
     int iline,i;
-    float *clr,matrix[4][4];
+    float *clr;
     struct plot *plt = &anim.plt[iplot];
-    calcMatrix(matrix);
-    glPushMatrix();
-    glMultMatrixf((float *) matrix);
     for (iline=0; iline<plt->size; iline++) {
       if (plt->lines[iline].isline) {
 	glBegin(GL_LINE_STRIP);
@@ -162,17 +159,16 @@ void displayData(void)
       }
       glEnd();
     }
-    glPopMatrix();
   }
 
 void enable_clipping()
 {
-   GLdouble eqn0[4] = {1.0,0.0,0.0,(double) box[0]};
-   GLdouble eqn1[4] = {-1.0,0.0,0.0,(double) box[0]};
-   GLdouble eqn2[4] = {0.0,1.0,0.0,(double) box[2]};
-   GLdouble eqn3[4] = {0.0,-1.0,0.0,(double) box[2]};
-   GLdouble eqn4[4] = {0.0,0.0,1.0,(double) box[1]};
-   GLdouble eqn5[4] = {0.0,0.0,-1.0,(double) box[1]};
+   GLdouble eqn0[4] = {1.0,0.0,0.0,(double) scaling[0][1]};
+   GLdouble eqn1[4] = {-1.0,0.0,0.0,(double) -scaling[0][0]};
+   GLdouble eqn2[4] = {0.0,1.0,0.0,(double) scaling[2][1]};
+   GLdouble eqn3[4] = {0.0,-1.0,0.0,(double) -scaling[2][0]};
+   GLdouble eqn4[4] = {0.0,0.0,1.0,(double) scaling[1][1]};
+   GLdouble eqn5[4] = {0.0,0.0,-1.0,(double) -scaling[1][0]};
    glClipPlane(GL_CLIP_PLANE0, eqn0);
    glClipPlane(GL_CLIP_PLANE1, eqn1);
    glClipPlane(GL_CLIP_PLANE2, eqn2);
@@ -199,8 +195,10 @@ void disable_clipping()
 
 void display(void)
 {
+   float matrix[4][4];
    glClear (GL_COLOR_BUFFER_BIT);
    glColor3f (1.0, 1.0, 1.0);
+   glMatrixMode(GL_MODELVIEW);
    glLoadIdentity ();             /* clear the matrix */
            /* viewing transformation  */
    gluLookAt (0.0, camera, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
@@ -209,9 +207,13 @@ void display(void)
    /* Draw the surrounding box */
    displayBox();
    draw_axes();
+   calcMatrix(matrix);
+   glPushMatrix();
+   glMultMatrixf((float *) matrix);
    enable_clipping();
    displayData();
    disable_clipping();
+   glPopMatrix();
    glFlush ();
    glutSwapBuffers();
 }
