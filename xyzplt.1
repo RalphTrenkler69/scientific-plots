@@ -4,8 +4,8 @@ xyzplt \- 3D lines and points plot with OpenGL
 .SY xyzplt
 .OP \-c height
 .OP \-h
-.OP \-m "angle\ sleep"
-.OP \-s sleep
+.OP \-m "angle\ fps"
+.OP \-fps fps
 .OP \-a "alpha"
 .OP \-f
 .RI [ file ]
@@ -26,16 +26,17 @@ The default value is 0.7.
 .BI \-h
 Print help text and exit.
 .TP
-.BI \-m " angle sleep"
+.BI \-m " angle fps"
 Rotate the cube in steps of
 .I angle
-in degrees with sleep time
-.I sleep
-in milliseconds.
+in degrees with
+.I fps
+frames per second.
 .TP
-.BI \-s " sleep"
+.BI \-fps " fps"
 Set time steps for animation to
-.I sleep.
+.I fps
+frames per second.
 .TP
 .BI \-a " alpha"
 Set global

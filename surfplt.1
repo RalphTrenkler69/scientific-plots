@@ -5,9 +5,9 @@ surfplt \- 3D surface plot with OpenGL of a matrix with real elements
 .OP \-a alpha
 .OP \-c height
 .OP \-h
-.OP \-m "angle\ sleep"
+.OP \-m "angle\ fps"
 .OP \-w
-.OP \-s " sleep"
+.OP \-fps " frames_per_second"
 .RI [ file ]
 .YS
 .SH DESCRIPTION
@@ -34,20 +34,20 @@ The default value is 0.7.
 .BI \-h
 Print help text and exit.
 .TP
-.BI \-m " angle sleep"
+.BI \-m " angle fps"
 Rotate the cube in steps of
 .I angle
-in degrees with sleep time
-.I sleep
-in milliseconds.
+in degrees with 
+.I fps
+frames per second.
 .TP
 .B \-w
 Draw surface with a wireframe and do not render.
 .TP
-.BI \-s " sleep"
+.BI \-fps " fps"
 Set the time steps in the animation to
-.I sleep
-milliseconds.
+.I fps
+frames per second.
 .SH INPUT FILE FORMAT
 The input file is read from standard input or from the specified file.
 The head of the file can contain comment lines, which start with

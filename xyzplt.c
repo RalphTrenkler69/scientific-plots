@@ -7,6 +7,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <time.h>
+#include <sys/time.h>
 #include "fort_record.h"
 
 #define TRUE 1
@@ -62,11 +64,11 @@ struct fort_record_3 {
 
 struct animation anim = {FALSE, FALSE, 1, (void *) NULL};
 
-float camera,spinangle,thetaangle,spinincr,sleeptime,box[3],scaling[3][2];
+float camera,spinangle,thetaangle,spinincr,deltatime,box[3],scaling[3][2];
 int width,height,x_mouse,y_mouse,iplot;
 char xlabel[MAXSTRLEN], ylabel[MAXSTRLEN], zlabel[MAXSTRLEN];
 int fort_input = FALSE, with_glob_blending = FALSE;
-float glob_alpha = 1.0;
+float glob_alpha = 1.0, frames_per_sec = 24.0;
 
 extern void init_ftgl(), draw_axes();
 
@@ -243,8 +245,19 @@ void keyboard(unsigned char key, int x, int y)
    }
 }
 
+double get_time_sec(void)
+{
+  struct timespec time;
+  if (0 != clock_gettime((clockid_t) CLOCK_REALTIME, &time)) {
+    fprintf(stderr, "surfplt: error calling clock_gettime.\n");
+    exit(1);
+  }
+  return (double) time.tv_sec + (double) time.tv_nsec / 1e9;
+}
+
 void idleDisplay(void)
   {
+    double time1, time2, dt;
     if (anim.motion) {
       spinangle+=spinincr;
       if (spinangle > 360.0) 
@@ -252,8 +265,13 @@ void idleDisplay(void)
     }
     if (anim.animate)
       iplot = (iplot + 1) % anim.size;
-    usleep((unsigned long) sleeptime*1000.0);
+    time1 = get_time_sec();
     glutPostRedisplay();
+    time2 = get_time_sec();
+    dt = time2 - time1;
+    if (dt < deltatime) {
+      usleep((unsigned long) ((deltatime - dt)*1e6));
+    }
   }
 
 void mouse(int button, int state, int x, int y)
@@ -621,7 +639,6 @@ int main(int argc, char** argv)
    x_mouse = width/2;
    y_mouse = height/2;
    anim.motion=FALSE;
-   sleeptime = 40.0;
    spinincr=0.1;
    camera = 0.7;
    box[0]=1.0;
@@ -653,7 +670,7 @@ int main(int argc, char** argv)
 	if (spinincr>360.0 || spinincr<-360.0) {
 	  fprintf(stderr,"xyzplt: warning: strange increment angle.\n");
 	}
-	if (1!=sscanf(argv[++argi],"%f",&sleeptime)) {
+	if (1!=sscanf(argv[++argi],"%f",&frames_per_sec) || frames_per_sec < 0.0) {
 	  fprintf(stderr,"xyzplt: error parsing command line.\n");
 	}
 	anim.motion=TRUE;
@@ -662,8 +679,8 @@ int main(int argc, char** argv)
 	  fprintf(stderr,"xyzplt: float in args expected.\n");
 	  exit(1);
 	}
-      } else if (0 == strcmp(argv[argi],"-s")) {
-	if (1 != sscanf(argv[++argi],"%f",&sleeptime) || sleeptime < 0.0) {
+      } else if (0 == strcmp(argv[argi],"-fps")) {
+	if (1 != sscanf(argv[++argi],"%f",&frames_per_sec) || frames_per_sec < 0.0) {
 	  fprintf(stderr,"xyzplt: float in args expected.\n");
 	  exit(1);
 	}
@@ -694,6 +711,7 @@ printf("usage: surfplt [-h] [-c <height>] [-m <angle> <sleep>] [-s <sleep>>] <fi
 	exit(1);
       }
    }
+   deltatime = 1.0/frames_per_sec;
    if (read_from_file)
      infile = fopen(filename, (fort_input ? "rb" : "r"));
    else if (fort_input) {
