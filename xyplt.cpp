@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstring>
 #include <unistd.h>
+#include <chrono>
 
 extern void init_ftgl(), draw_axes();
 
@@ -31,7 +32,9 @@ struct animation {
 animation anim = {false, 1, nullptr};
   
 char xlabel[maxstrlen], ylabel[maxstrlen];
-float box[2], scaling[2][2], sleeptime;
+float box[2], scaling[2][2];
+double frames_per_sec = 24.0;
+unsigned long deltatime;
 int width, height, iplot;
 
 void init(void) 
@@ -106,10 +109,15 @@ void reshape(int,int);
 
 void idleDisplay(void)
 {
+  auto time1 = std::chrono::system_clock::now();
   if (anim.animate)
      iplot = (iplot + 1) % anim.size;
-  usleep((unsigned long) sleeptime*1000);
   glutPostRedisplay();
+  auto time2 = std::chrono::system_clock::now();
+  unsigned long elapsed = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
+  if (elapsed < deltatime) {
+    usleep(deltatime - elapsed);
+  }
 }
 
 void display(void)
@@ -316,25 +324,25 @@ int main(int argc, char** argv)
    char *filename;
    FILE *infile = stdin;
    bool read_from_file = false;
-   sleeptime = 100.0;
    for (int argi = 1; argi < argc; argi++) {
-     if (*(argv[argi]) != '-' ) {
+     if ((argv[argi])[0] != '-' ) {
        if (!read_from_file) {
          filename = argv[argi];
          infile = fopen(filename, "r");
          if (infile == nullptr) {
-	   fprintf(stderr,"xyplt: cannot open file '%s'.\n",filename);
-	   exit(3);
-	 }
-	 read_from_file = true;
+	          fprintf(stderr,"xyplt: cannot open file '%s'.\n",filename);
+	          exit(3);
+         }
+	       read_from_file = true;
        } else {
-	 fprintf(stderr, "xyplt: too many filename args on cmd line.\n");
-	 exit(1);
+	       fprintf(stderr, "xyplt: too many filename args on cmd line.\n");
+	       exit(1);
        }
-     } else if (0 == strcmp(argv[argi],"-s")) {
-       if ((1 != sscanf(argv[++argi],"%f",&sleeptime)) ||
-	   (sleeptime < 0.0)) {
-	 fprintf(stderr,"xyplt: no pos float after '-s' in cmd line.\n");
+     } else if (0 == strcmp(argv[argi],"-fps")) {
+       argi++;
+       if (argi >= argc || (1 != sscanf(argv[argi],"%lf",&frames_per_sec)) ||
+	   (frames_per_sec <= 0.0)) {
+	 fprintf(stderr,"xyplt: no pos float after '-fps' in cmd line.\n");
 	 exit(1);
        }
      } else {
@@ -342,6 +350,7 @@ int main(int argc, char** argv)
        exit(1);
      }
    }
+   deltatime = static_cast<unsigned long>(1.0e6/frames_per_sec);
    width=500;
    height=500;
    box[0]=1.0;

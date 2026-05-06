@@ -2,7 +2,7 @@
 .SH NAME
 xyplt \- 2D lines and points plot with OpenGL
 .SY xyplt
-.OP \-s sleep
+.OP \-fps fps
 .RI [ file ]
 .YS
 .SH DESCRIPTION
@@ -14,9 +14,8 @@ The input file structure is quite simple.
 .SH OPTIONS
 The following options can be given.
 .TP
-.BI \-s " sleep"
-Set the sleep time between time steps in the animation.
-The sleep time is given in milliseconds.
+.BI \-fps " fps"
+Set the frames per second value in the animation.
 .SH INPUT FILE FORMAT
 The input data is read from standard input or from the given file.
 The head of the file can contain comment lines, which start with an '#'
