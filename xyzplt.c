@@ -19,8 +19,6 @@
 #define FORTSTRLEN 24
 
 #define in_interval(a,b,x)  ((a) <= (x) && (x) <= (b))
-#define set_matrix(i,j)     matrix[i][j]=2.0*box[j]/(scaling[j][1]-scaling[j][0])
-#define set_matrix_3(i,j)   matrix[i][3]=-box[j]-2.0*box[j]*scaling[j][0]/(scaling[j][1]-scaling[j][0])
 
 struct pltobject {
   float color[4];
@@ -120,21 +118,39 @@ void doScaling(float *a, float *b)
   }
 */
 
-void calcMatrix(float matrix[4][4])
+void set_scal_matrix(float matrix[][4], int j)
   {
+    float alpha = 2.0*box[j]/(scaling[j][1]-scaling[j][0]);
+    matrix[j][j] = alpha;
+    matrix[j][3] = -box[j]-alpha*scaling[j][0];
+  }
+
+void calcMatrix(float matrix[][4])
+  {
+    float perm_matrix[4][4],scal_matrix[4][4];
     int i,j;
     for (i=0; i<4; i++)
-      for (j=0; j<4; j++)
-        matrix[i][j]=0.0;
-    set_matrix(0,0);
-    set_matrix(1,2);
-    set_matrix(2,1);
-    matrix[1][2]= -matrix[1][2]; /* invert y axis */
-    set_matrix_3(0,0);
-    set_matrix_3(1,2);
-    set_matrix_3(2,1);
-    matrix[1][3]= -matrix[1][3]; /* invert y axis */
-    matrix[3][3]=1.0;
+      for (j=0; j<4; j++) {
+        scal_matrix[i][j]=0.0;
+        perm_matrix[i][j]=0.0;
+      }
+    set_scal_matrix(scal_matrix, 0);
+    set_scal_matrix(scal_matrix, 1);
+    set_scal_matrix(scal_matrix, 2);
+    scal_matrix[3][3]=1.0;
+    perm_matrix[0][0] = 1.0;
+    perm_matrix[1][2] = -1.0;
+    perm_matrix[2][1] = 1.0;
+    perm_matrix[3][3] = 1.0;
+    /* matrix = perm_matrix * scal_matrix */
+    for (i=0; i<4; i++) 
+      for (j=0; j<4; j++) {
+        float sum = 0.0;
+        int k;
+        for (k=0; k<4; k++)
+          sum += perm_matrix[i][k]*scal_matrix[k][j];
+        matrix[i][j] = sum;
+      } 
   }
 
 void displayData(void)
@@ -157,7 +173,7 @@ void displayData(void)
         glColor3f(clr[0], clr[1], clr[2]);
       }
       for (i=0; i<plt->lines[iline].npoints; i++) {
-	glVertex3fv(plt->lines[iline].vertices[i]);
+	glVertex3fv((GLfloat *) plt->lines[iline].vertices[i]);
       }
       glEnd();
     }
@@ -165,12 +181,12 @@ void displayData(void)
 
 void enable_clipping()
 {
-   GLdouble eqn0[4] = {1.0,0.0,0.0,(double) scaling[0][1]};
-   GLdouble eqn1[4] = {-1.0,0.0,0.0,(double) -scaling[0][0]};
-   GLdouble eqn2[4] = {0.0,1.0,0.0,(double) scaling[2][1]};
-   GLdouble eqn3[4] = {0.0,-1.0,0.0,(double) -scaling[2][0]};
-   GLdouble eqn4[4] = {0.0,0.0,1.0,(double) scaling[1][1]};
-   GLdouble eqn5[4] = {0.0,0.0,-1.0,(double) -scaling[1][0]};
+   GLdouble eqn0[4] = {1.0,0.0,0.0,(double) box[0]};
+   GLdouble eqn1[4] = {-1.0,0.0,0.0,(double) box[0]};
+   GLdouble eqn2[4] = {0.0,1.0,0.0,(double) box[2]};
+   GLdouble eqn3[4] = {0.0,-1.0,0.0,(double) box[2]};
+   GLdouble eqn4[4] = {0.0,0.0,1.0,(double) box[1]};
+   GLdouble eqn5[4] = {0.0,0.0,-1.0,(double) box[1]};
    glClipPlane(GL_CLIP_PLANE0, eqn0);
    glClipPlane(GL_CLIP_PLANE1, eqn1);
    glClipPlane(GL_CLIP_PLANE2, eqn2);
@@ -209,13 +225,13 @@ void display(void)
    /* Draw the surrounding box */
    displayBox();
    draw_axes();
+   enable_clipping();
    calcMatrix(matrix);
    glPushMatrix();
-   glMultMatrixf((float *) matrix);
-   enable_clipping();
+   glMultTransposeMatrixf((GLfloat *) matrix);
    displayData();
-   disable_clipping();
    glPopMatrix();
+   disable_clipping();
    glFlush ();
    glutSwapBuffers();
 }
@@ -428,6 +444,10 @@ void readinput(FILE *file)
 	  fprintf(stderr,"xyzplt: arg for 'box' missing.\n");
 	  exit(1);
 	}
+  if (box[0] <= 0.0 || box[1] <= 0.0 || box[2] <= 0.0) {
+    fprintf(stderr, "xyzplt: invalid box dimensions.\n");
+    exit(1);
+  }
       } else if (0==strcmp(token,"scale")) {
 	if (6!=fscanf(file,"%f %f %f %f %f %f",
 		      &(scaling[0][0]),&(scaling[0][1]),
@@ -436,6 +456,12 @@ void readinput(FILE *file)
 	  fprintf(stderr, "xyzplt: arg for 'scale' missing.\n");
 	  exit(1);
 	}
+  if (scaling[0][0] >= scaling[0][1]
+     || scaling[1][0] >= scaling[1][1]
+     || scaling[2][0] >= scaling[2][1]) {
+    fprintf(stderr, "xyzplt: invalid scaling values.\n");
+    exit(1);
+  }
       } else if (0 == strcmp(token,"xlabel")) {
 	read_string(file,xlabel,MAXSTRLEN);
       } else if (0 == strcmp(token,"ylabel")) {
