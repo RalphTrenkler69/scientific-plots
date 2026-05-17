@@ -139,8 +139,8 @@ void calcMatrix(float matrix[][4])
     set_scal_matrix(scal_matrix, 2);
     scal_matrix[3][3]=1.0;
     perm_matrix[0][0] = 1.0;
-    perm_matrix[1][2] = -1.0;
-    perm_matrix[2][1] = 1.0;
+    perm_matrix[1][2] = 1.0;
+    perm_matrix[2][1] = -1.0;
     perm_matrix[3][3] = 1.0;
     /* matrix = perm_matrix * scal_matrix */
     for (i=0; i<4; i++) 
