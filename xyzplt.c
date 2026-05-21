@@ -720,17 +720,16 @@ int main(int argc, char** argv)
           exit(1);
         }
       } else if (0==strcmp(argv[argi],"-h")) {
-printf("usage: surfplt [-h] [-c <height>] [-m <angle> <sleep>] [-s <sleep>>] <file>\n");
+printf("usage: xyzplt [-h][-f][-a <alpha>][-c <height>] [-m <angle> <fps>] [-fps <fps>>] <file>\n");
 	printf("   -h   print this help.\n");
 	printf("   -c <height>   set camera height.\n");
-        printf("   -s <sleeptime>  set sleeptime for animation,\n");
-	printf("   -m <angle> <sleep>\n");
-	printf("        rotate the surface by increment <angle> every\n");
-	printf("        <sleep> milliseconds.\n");
-  printf("   -s <sleep> set sleeptime for animation,\n");
-  printf("   -f  read input in Fortran binary format.\n");
-  printf("   -a <alpha>  set global alpha value for blending.\n");
-  printf("        <alpha> must be in range [0.0...1.0].\n");
+	printf("   -m <angle> <fps>\n");
+	printf("        rotate the surface by increment <angle> with\n");
+	printf("        <fps> frames per second.\n");
+    printf("   -fps <fps> set frames per second,\n");
+    printf("   -f  read input in Fortran binary format.\n");
+    printf("   -a <alpha>  set global alpha value for blending.\n");
+    printf("        <alpha> must be in range [0.0...1.0].\n");
 	exit(0);
       } else {
 	fprintf(stderr, "xyzplt: unknown option %s.\n",argv[argi]);

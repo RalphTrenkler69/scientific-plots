@@ -628,16 +628,16 @@ int main(int argc, char** argv)
 	 exit(1);
        }
      } else if (0==strcmp(argv[argi],"-h")) {
-printf("usage: surfplt [-h] [-c] [-w] [-m <angle> <sleep>] [-a <alpha>] [-display <display>] <file>\n");
+printf("usage: surfplt [-h] [-c] [-w] [-m <angle> <fps>] [-fps <fps>][-a <alpha>] <file>\n");
 	printf("   -h   print this help.\n");
 	printf("   -c <height>\n");
 	printf("        set vertical camera position.\n");
 	printf("   -w   draw wireframe only, do not render.\n");
-        printf("   -a   make surface tranlucent by factor <alpha>.\n");
-        printf("   -s  <sleep>  set sleeptime in msecs for animation.\n");
-	printf("   -m <angle> <sleep>\n");
-	printf("        rotate the surface by increment <angle> every\n");
-	printf("        <sleep> milliseconds.\n");
+    printf("   -a   make surface tranlucent by factor <alpha>.\n");
+    printf("   -fps  <fps>  set frames per second.\n");
+	printf("   -m <angle> <fps>\n");
+	printf("        rotate the surface by increment <angle> with\n");
+	printf("        <fps> frames per second.\n");
 	exit(0);
       } else if (0==strcmp(argv[argi],"-c")) {
 	if (1!=sscanf(argv[++argi],"%f",&camera)) {
